@@ -6,7 +6,6 @@ backend/uploads/
 dist/
 *.log
 .DS_Store
-.gemini/
 
 # Internal planning docs — not for GitHub
 implementation_plan.md
