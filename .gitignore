@@ -1,0 +1,15 @@
+node_modules/
+backend/config/config.env
+backend/uploads/
+.env
+.env.local
+dist/
+*.log
+.DS_Store
+.gemini/
+
+# Internal planning docs — not for GitHub
+implementation_plan.md
+lawlink_explained.md
+LawLink_Project_Report.html
+docs/

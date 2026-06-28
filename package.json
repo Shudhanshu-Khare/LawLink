@@ -1,0 +1,16 @@
+{
+  "name": "lawlink",
+  "version": "1.0.0",
+  "description": "Full-stack legal services platform",
+  "scripts": {
+    "start": "cd src && npm start",
+    "server": "cd backend && node server.js",
+    "server:dev": "cd backend && npx nodemon server.js",
+    "dev": "npx concurrently \"npm run server:dev\" \"cd src && npm run dev\"",
+    "install-all": "npm install && cd backend && npm install && cd ../src && npm install",
+    "build": "cd src && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
