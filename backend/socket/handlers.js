@@ -57,7 +57,7 @@ module.exports = function setupSocket(io) {
           lastMessageAt: new Date()
         });
 
-        const populated = await message.populate('sender', 'name profilePhoto role');
+        const populated = await message.populate('sender', 'name role');
 
         // Send to all in room
         io.to(`conv:${conversationId}`).emit('message:new', populated);

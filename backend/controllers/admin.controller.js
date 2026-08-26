@@ -44,7 +44,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getPendingUsers = async (req, res) => {
   try {
     const pending = await User.find({ isVerified: { $ne: true }, isBlocked: { $ne: true }, role: { $ne: 'admin' } })
-      .select('name email role authMethod profilePhoto createdAt phone location bio practiceAreas barRegistrationNumber')
+      .select('name email role authMethod createdAt phone location bio practiceAreas barRegistrationNumber')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: pending.length, users: pending });
@@ -59,7 +59,7 @@ exports.getPendingUsers = async (req, res) => {
 exports.getAllLawyers = async (req, res) => {
   try {
     const lawyers = await User.find({ role: 'lawyer' })
-      .select('name email authMethod profilePhoto isVerified isBlocked createdAt phone location practiceAreas barRegistrationNumber yearsOfExperience feePerHour')
+      .select('name email authMethod isVerified isBlocked createdAt phone location practiceAreas barRegistrationNumber yearsOfExperience feePerHour')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: lawyers.length, lawyers });
@@ -74,7 +74,7 @@ exports.getAllLawyers = async (req, res) => {
 exports.getAllClients = async (req, res) => {
   try {
     const clients = await User.find({ role: 'client' })
-      .select('name email authMethod profilePhoto isVerified isBlocked createdAt phone location legalMatterTypes')
+      .select('name email authMethod isVerified isBlocked createdAt phone location legalMatterTypes')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: clients.length, clients });

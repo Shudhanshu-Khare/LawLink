@@ -189,14 +189,10 @@ const AdminDashboard = () => {
             <tr key={user._id}>
               <td>
                 <div className="d-flex align-items-center gap-2">
-                  {user.profilePhoto ? (
-                    <img src={user.profilePhoto} alt="" className="rounded-circle" style={{ width: 32, height: 32, objectFit: 'cover' }} />
-                  ) : (
-                    <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
-                         style={{ width: 32, height: 32, fontSize: 14 }}>
-                      {user.name?.charAt(0)}
-                    </div>
-                  )}
+                  <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
+                       style={{ width: 32, height: 32, fontSize: 14 }}>
+                    {user.name?.charAt(0)}
+                  </div>
                   <div>
                     <div className="fw-semibold">{user.name}</div>
                     {user.location?.city && <small className="text-muted">{user.location.city}</small>}

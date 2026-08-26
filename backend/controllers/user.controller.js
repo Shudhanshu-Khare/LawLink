@@ -46,27 +46,6 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Upload profile photo
-// @route   POST /api/users/profile/photo
-exports.uploadPhoto = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload a file' });
-    }
-
-    const photoUrl = `/uploads/profiles/${req.file.filename}`;
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { profilePhoto: photoUrl },
-      { new: true }
-    );
-
-    res.json({ success: true, user, photoUrl });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
 // @desc    Get public lawyer directory
 // @route   GET /api/users/lawyers
 // @access  Public
@@ -96,7 +75,7 @@ exports.getLawyers = async (req, res) => {
     }
 
     const lawyers = await User.find(filter)
-      .select('name email profilePhoto bio location practiceAreas feePerHour yearsOfExperience languages courtAdmissions barRegistrationNumber')
+      .select('name email bio location practiceAreas feePerHour yearsOfExperience languages courtAdmissions barRegistrationNumber')
       .sort({ yearsOfExperience: -1 });
 
     res.json({ success: true, count: lawyers.length, lawyers });
@@ -123,7 +102,7 @@ exports.getClients = async (req, res) => {
     }
 
     const clients = await User.find(filter)
-      .select('name email profilePhoto phone location legalMatterTypes activeCase')
+      .select('name email phone location legalMatterTypes activeCase')
       .sort({ name: 1 });
 
     res.json({ success: true, count: clients.length, clients });
@@ -138,7 +117,7 @@ exports.getClients = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('name email profilePhoto bio location practiceAreas feePerHour yearsOfExperience languages courtAdmissions barRegistrationNumber role');
+      .select('name email bio location practiceAreas feePerHour yearsOfExperience languages courtAdmissions barRegistrationNumber role');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });

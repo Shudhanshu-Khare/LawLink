@@ -46,8 +46,8 @@ exports.getCases = async (req, res) => {
     if (legalArea) filter.legalArea = legalArea;
 
     const cases = await Case.find(filter)
-      .populate('client', 'name email profilePhoto')
-      .populate('lawyer', 'name email profilePhoto practiceAreas')
+      .populate('client', 'name email')
+      .populate('lawyer', 'name email practiceAreas')
       .sort({ updatedAt: -1 });
 
     res.json({ success: true, count: cases.length, cases });
@@ -60,8 +60,8 @@ exports.getCases = async (req, res) => {
 exports.getCase = async (req, res) => {
   try {
     const caseDoc = await Case.findById(req.params.id)
-      .populate('client', 'name email phone profilePhoto')
-      .populate('lawyer', 'name email phone profilePhoto practiceAreas feePerHour')
+      .populate('client', 'name email phone')
+      .populate('lawyer', 'name email phone practiceAreas feePerHour')
       .populate('milestones.addedBy', 'name role');
 
     if (!caseDoc) {

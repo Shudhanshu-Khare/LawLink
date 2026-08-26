@@ -20,14 +20,14 @@ exports.getOrCreateConversation = async (req, res) => {
     // Find existing conversation
     let conversation = await Conversation.findOne({
       participants: { $all: [myId, userId], $size: 2 }
-    }).populate('participants', 'name email profilePhoto role')
+    }).populate('participants', 'name email role')
       .populate('lastMessage');
 
     if (!conversation) {
       conversation = await Conversation.create({
         participants: [myId, userId]
       });
-      conversation = await conversation.populate('participants', 'name email profilePhoto role');
+      conversation = await conversation.populate('participants', 'name email role');
     }
 
     res.json({ success: true, conversation });
@@ -43,7 +43,7 @@ exports.getConversations = async (req, res) => {
     const conversations = await Conversation.find({
       participants: req.user.id
     })
-      .populate('participants', 'name email profilePhoto role')
+      .populate('participants', 'name email role')
       .populate('lastMessage')
       .sort({ lastMessageAt: -1 });
 
@@ -75,7 +75,7 @@ exports.getMessages = async (req, res) => {
     }
 
     const messages = await Message.find(filter)
-      .populate('sender', 'name profilePhoto role')
+      .populate('sender', 'name role')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
@@ -110,7 +110,7 @@ exports.sendMessage = async (req, res) => {
       lastMessageAt: new Date()
     });
 
-    const populated = await message.populate('sender', 'name profilePhoto role');
+    const populated = await message.populate('sender', 'name role');
     res.status(201).json({ success: true, message: populated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

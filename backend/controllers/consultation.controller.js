@@ -92,8 +92,8 @@ exports.getConsultations = async (req, res) => {
     }
 
     const consultations = await Consultation.find(filter)
-      .populate('client', 'name email phone profilePhoto')
-      .populate('lawyer', 'name email practiceAreas feePerHour profilePhoto')
+      .populate('client', 'name email phone')
+      .populate('lawyer', 'name email practiceAreas feePerHour')
       .sort({ date: 1, timeSlot: 1 });
 
     res.json({ success: true, count: consultations.length, consultations });
@@ -214,8 +214,8 @@ exports.getUpcoming = async (req, res) => {
     else if (req.user.role === 'lawyer') filter.lawyer = req.user.id;
 
     const consultations = await Consultation.find(filter)
-      .populate('client', 'name email profilePhoto')
-      .populate('lawyer', 'name email practiceAreas profilePhoto')
+      .populate('client', 'name email')
+      .populate('lawyer', 'name email practiceAreas')
       .sort({ date: 1 })
       .limit(5);
 
