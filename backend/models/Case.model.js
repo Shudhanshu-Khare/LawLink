@@ -64,12 +64,29 @@ const CaseSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Auto-generate case number before saving
+// Auto-generate case number before saving (race-safe with retry)
 CaseSchema.pre('save', async function(next) {
   if (!this.caseNumber) {
     const year = new Date().getFullYear();
-    const count = await mongoose.model('Case').countDocuments();
-    this.caseNumber = `LW-${year}-${String(count + 1).padStart(5, '0')}`;
+    const CaseModel = mongoose.model('Case');
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const last = await CaseModel.findOne({ caseNumber: new RegExp(`^LW-${year}-`) })
+        .sort({ _id: -1 })
+        .select('caseNumber');
+      
+      let nextNum = 1;
+      if (last && last.caseNumber) {
+        const parts = last.caseNumber.split('-');
+        nextNum = parseInt(parts[parts.length - 1], 10) + 1;
+      }
+      
+      this.caseNumber = `LW-${year}-${String(nextNum).padStart(5, '0')}`;
+      
+      // Check if this number already exists (race condition guard)
+      const exists = await CaseModel.findOne({ caseNumber: this.caseNumber });
+      if (!exists) break;
+    }
   }
   next();
 });

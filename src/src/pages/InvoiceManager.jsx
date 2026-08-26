@@ -17,13 +17,18 @@ const InvoiceManager = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [invRes, caseRes] = await Promise.all([
-        api.get('/invoices'),
-        api.get('/cases')
-      ]);
-      setInvoices(invRes.data.invoices);
-      setCases(caseRes.data.cases);
-      setLoading(false);
+      try {
+        const [invRes, caseRes] = await Promise.all([
+          api.get('/invoices'),
+          api.get('/cases')
+        ]);
+        setInvoices(invRes.data.invoices);
+        setCases(caseRes.data.cases);
+      } catch (err) {
+        console.error('Failed to load invoices:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -195,7 +200,7 @@ const InvoiceManager = () => {
                   <div className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold">₹{inv.totalAmount}</h5>
                     <div className="d-flex gap-2">
-                      <a href={`http://localhost:5000${inv.pdfUrl}`} target="_blank" rel="noreferrer"
+                      <a href={inv.pdfUrl} target="_blank" rel="noreferrer"
                          className="btn btn-sm btn-outline-primary">PDF</a>
                       {isClient && inv.status !== 'paid' && (
                         <button className="btn btn-sm btn-success" onClick={() => handlePay(inv._id)}>Pay</button>

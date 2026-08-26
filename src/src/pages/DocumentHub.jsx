@@ -30,13 +30,18 @@ const DocumentHub = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [docRes, caseRes] = await Promise.all([
-        api.get('/documents'),
-        api.get('/cases')
-      ]);
-      setDocuments(docRes.data.documents);
-      setCases(caseRes.data.cases);
-      setLoading(false);
+      try {
+        const [docRes, caseRes] = await Promise.all([
+          api.get('/documents'),
+          api.get('/cases')
+        ]);
+        setDocuments(docRes.data.documents);
+        setCases(caseRes.data.cases);
+      } catch (err) {
+        console.error('Failed to load documents:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -152,7 +157,7 @@ const DocumentHub = () => {
                   </p>
                   <div className="d-flex gap-2">
                     {doc.pdfUrl && (doc.status !== 'revoked' || isLawyer) && (
-                      <a href={`http://localhost:5000${doc.pdfUrl}`} target="_blank" rel="noreferrer"
+                      <a href={doc.pdfUrl} target="_blank" rel="noreferrer"
                          className="btn btn-sm btn-outline-primary">Download PDF</a>
                     )}
                     {doc.status === 'issued' && isLawyer && (

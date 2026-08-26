@@ -10,7 +10,7 @@ const PRACTICE_AREAS = ['criminal', 'civil', 'family', 'corporate', 'property', 
 
 const Register = () => {
   const location = useLocation();
-  const googleData = location.state?.googleData || null;
+  const [googleData, setGoogleData] = useState(location.state?.googleData || null);
 
   const [step, setStep] = useState(googleData ? 'profile' : 'form'); 
   // Steps: 'form' → 'otp' → done   |   'profile' (Google) → done
@@ -143,9 +143,14 @@ const Register = () => {
         credential: credentialResponse.credential
       });
       if (data.newUser) {
-        // Show profile completion form
-        navigate('/register', { state: { googleData: data.googleData }, replace: true });
-        window.location.reload(); // Force re-render with new state
+        // Show profile completion form using React state (no reload needed)
+        setFormData(prev => ({
+          ...prev,
+          name: data.googleData.name,
+          email: data.googleData.email
+        }));
+        setGoogleData(data.googleData);
+        setStep('profile');
       } else {
         // Already registered — log in
         login(data.token, data.user);

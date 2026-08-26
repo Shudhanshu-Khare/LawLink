@@ -21,20 +21,29 @@ const CaseManager = () => {
   const [creating, setCreating] = useState(false);
 
   const fetchCases = async () => {
-    const { data } = await api.get('/cases');
-    setCases(data.cases);
-    setLoading(false);
+    try {
+      const { data } = await api.get('/cases');
+      setCases(data.cases);
+    } catch (err) {
+      console.error('Failed to fetch cases:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchCases(); }, []);
 
   // Fetch client list when lawyer opens the create form
   const openCreateForm = async () => {
-    if (clients.length === 0) {
-      const { data } = await api.get('/users/clients');
-      setClients(data.clients);
+    try {
+      if (clients.length === 0) {
+        const { data } = await api.get('/users/clients');
+        setClients(data.clients);
+      }
+      setShowCreateForm(true);
+    } catch (err) {
+      alert('Failed to load client list');
     }
-    setShowCreateForm(true);
   };
 
   const createCase = async () => {
@@ -56,18 +65,26 @@ const CaseManager = () => {
   };
 
   const loadCase = async (id) => {
-    const { data } = await api.get(`/cases/${id}`);
-    setSelectedCase(data.case);
+    try {
+      const { data } = await api.get(`/cases/${id}`);
+      setSelectedCase(data.case);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to load case');
+    }
   };
 
   const addMilestone = async () => {
     if (!milestoneNote.trim()) return;
-    await api.put(`/cases/${selectedCase._id}/milestone`, {
-      note: milestoneNote,
-      stage: selectedCase.status
-    });
-    setMilestoneNote('');
-    loadCase(selectedCase._id);
+    try {
+      await api.put(`/cases/${selectedCase._id}/milestone`, {
+        note: milestoneNote,
+        stage: selectedCase.status
+      });
+      setMilestoneNote('');
+      loadCase(selectedCase._id);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add milestone');
+    }
   };
 
   const advanceCase = async () => {
@@ -77,8 +94,12 @@ const CaseManager = () => {
 
     const nextStage = stages[currentIdx + 1];
     if (window.confirm(`Advance case to "${nextStage}"?`)) {
-      await api.put(`/cases/${selectedCase._id}/status`, { status: nextStage });
-      loadCase(selectedCase._id);
+      try {
+        await api.put(`/cases/${selectedCase._id}/status`, { status: nextStage });
+        loadCase(selectedCase._id);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to advance case');
+      }
     }
   };
 

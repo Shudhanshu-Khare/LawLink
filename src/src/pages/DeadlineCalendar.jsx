@@ -25,12 +25,16 @@ const DeadlineCalendar = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [dlRes, caseRes] = await Promise.all([
-        api.get('/deadlines', { params: { upcoming: 'true' } }),
-        api.get('/cases')
-      ]);
-      setDeadlines(dlRes.data.deadlines);
-      setCases(caseRes.data.cases);
+      try {
+        const [dlRes, caseRes] = await Promise.all([
+          api.get('/deadlines', { params: { upcoming: 'true' } }),
+          api.get('/cases')
+        ]);
+        setDeadlines(dlRes.data.deadlines);
+        setCases(caseRes.data.cases);
+      } catch (err) {
+        console.error('Failed to load deadlines:', err);
+      }
     };
     load();
   }, []);

@@ -44,11 +44,29 @@ const LegalDocumentSchema = new mongoose.Schema({
   issuedAt: Date
 }, { timestamps: true });
 
+// Auto-generate document number (race-safe with retry)
 LegalDocumentSchema.pre('save', async function(next) {
   if (!this.documentNumber) {
     const year = new Date().getFullYear();
-    const count = await mongoose.model('LegalDocument').countDocuments();
-    this.documentNumber = `LW-DOC-${year}-${String(count + 1).padStart(5, '0')}`;
+    const prefix = `LW-DOC-${year}-`;
+    const DocModel = mongoose.model('LegalDocument');
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const last = await DocModel.findOne({ documentNumber: new RegExp(`^${prefix}`) })
+        .sort({ _id: -1 })
+        .select('documentNumber');
+      
+      let nextNum = 1;
+      if (last && last.documentNumber) {
+        const parts = last.documentNumber.split('-');
+        nextNum = parseInt(parts[parts.length - 1], 10) + 1;
+      }
+      
+      this.documentNumber = `${prefix}${String(nextNum).padStart(5, '0')}`;
+      
+      const exists = await DocModel.findOne({ documentNumber: this.documentNumber });
+      if (!exists) break;
+    }
   }
   next();
 });

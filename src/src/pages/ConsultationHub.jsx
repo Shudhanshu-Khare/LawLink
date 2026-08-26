@@ -19,11 +19,16 @@ const ConsultationHub = () => {
 
   const fetchConsultations = async () => {
     setLoading(true);
-    const params = {};
-    if (filter) params.status = filter;
-    const { data } = await api.get('/consultations', { params });
-    setConsultations(data.consultations);
-    setLoading(false);
+    try {
+      const params = {};
+      if (filter) params.status = filter;
+      const { data } = await api.get('/consultations', { params });
+      setConsultations(data.consultations);
+    } catch (err) {
+      console.error('Failed to fetch consultations:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchConsultations(); }, [filter]);

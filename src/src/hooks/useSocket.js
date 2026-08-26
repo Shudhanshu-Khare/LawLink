@@ -3,19 +3,20 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
 
-const SOCKET_URL = 'http://localhost:5000';
+// In dev, use same origin (Vite proxy handles /socket.io). In prod, use explicit URL.
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 export const useSocket = () => {
-  const { token, isAuthenticated } = useAuth();
+  const { socketToken, isAuthenticated } = useAuth();
   const socketRef = useRef(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || !token) return;
+    if (!isAuthenticated || !socketToken) return;
 
     const socket = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token: socketToken },
       transports: ['websocket', 'polling']
     });
 
@@ -38,7 +39,7 @@ export const useSocket = () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, socketToken]);
 
   return {
     socket: socketRef.current,

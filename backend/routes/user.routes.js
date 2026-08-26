@@ -2,13 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getProfile, updateProfile, uploadPhoto, getLawyers, getClients
+  getProfile, updateProfile, uploadPhoto, getLawyers, getClients, getUserById
 } = require('../controllers/user.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { uploadProfilePhoto } = require('../middleware/upload');
 
 // Public
 router.get('/lawyers', getLawyers);
+router.get('/public/:id', getUserById);
 
 // Protected
 router.get('/profile', protect, getProfile);

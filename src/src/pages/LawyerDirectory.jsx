@@ -34,7 +34,8 @@ const LawyerDirectory = () => {
               params: { startDate: today, endDate: today }
             });
             slotCounts[lawyer._id] = availData.availability[today]?.available?.length || 0;
-          } catch {
+          } catch (err) {
+            console.warn(`Failed to fetch availability for lawyer ${lawyer._id}:`, err);
             slotCounts[lawyer._id] = 0;
           }
         })

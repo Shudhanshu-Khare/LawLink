@@ -44,22 +44,29 @@ const BookConsultation = () => {
 
   useEffect(() => {
     const fetchLawyer = async () => {
-      const { data } = await api.get('/users/lawyers');
-      const found = data.lawyers.find(l => l._id === lawyerId);
-      setLawyer(found);
+      try {
+        const { data } = await api.get(`/users/public/${lawyerId}`);
+        setLawyer(data.user);
+      } catch (err) {
+        console.error('Failed to load lawyer:', err);
+      }
     };
     fetchLawyer();
   }, [lawyerId]);
 
   useEffect(() => {
     const fetchAvailability = async () => {
-      const startDate = getLocalDateStr(dates[0]);
-      const endDate = getLocalDateStr(dates[dates.length - 1]);
+      try {
+        const startDate = getLocalDateStr(dates[0]);
+        const endDate = getLocalDateStr(dates[dates.length - 1]);
 
-      const { data } = await api.get(`/consultations/availability/${lawyerId}`, {
-        params: { startDate, endDate }
-      });
-      setAvailability(data.availability);
+        const { data } = await api.get(`/consultations/availability/${lawyerId}`, {
+          params: { startDate, endDate }
+        });
+        setAvailability(data.availability);
+      } catch (err) {
+        console.error('Failed to load availability:', err);
+      }
     };
     if (lawyerId) fetchAvailability();
   }, [lawyerId, dates]);

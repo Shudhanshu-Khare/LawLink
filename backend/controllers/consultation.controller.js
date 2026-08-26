@@ -29,6 +29,14 @@ exports.bookConsultation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Lawyer not found' });
     }
 
+    // Check if client is verified by admin
+    if (!req.user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your profile is pending admin verification. You can browse lawyers but cannot book consultations yet.'
+      });
+    }
+
     // Check slot is not already booked
     const existing = await Consultation.findOne({
       lawyer: lawyerId,

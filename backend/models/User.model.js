@@ -36,6 +36,14 @@ const UserSchema = new mongoose.Schema({
     enum: ['client', 'lawyer', 'admin'],
     default: 'client'
   },
+  isVerified: {
+    type: Boolean,
+    default: false  // Admin must approve new registrations
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false  // Admin can suspend accounts
+  },
   phone: {
     type: String,
     trim: true
@@ -83,7 +91,11 @@ const UserSchema = new mongoose.Schema({
   activeCase: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Case'
-  }
+  },
+
+  // ── Password reset ──
+  resetPasswordToken: String,
+  resetPasswordExpire: Date
 }, {
   timestamps: true  // adds createdAt and updatedAt
 });

@@ -20,8 +20,8 @@ const Navbar = () => {
     try {
       const { data } = await api.get('/chat/unread-count');
       setUnreadCount(data.unreadCount);
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.warn('Navbar: Failed to fetch unread count', err);
     }
   };
 
@@ -69,20 +69,28 @@ const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark" style={{ background: '#0f172a' }}>
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/dashboard">LawLink</Link>
+        <Link className="navbar-brand fw-bold" to={user?.role === 'admin' ? '/admin' : '/dashboard'}>LawLink</Link>
         <button className="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
           <span className="navbar-toggler-icon" />
         </button>
         <div className="collapse navbar-collapse" id="nav">
           <ul className="navbar-nav me-auto">
-            {navLink('/dashboard', 'Dashboard')}
-            {navLink('/cases', 'Cases')}
-            {isClient && navLink('/lawyers', 'Find Lawyers')}
-            {navLink('/consultations', 'Consultations')}
-            {navLink('/documents', 'Documents')}
-            {navLink('/invoices', 'Invoices')}
-            {navLink('/deadlines', 'Deadlines')}
-            {navLink('/chat', 'Chat', unreadCount > 0)}
+            {user?.role === 'admin' ? (
+              <>
+                {navLink('/admin', '⚙️ Admin Panel')}
+              </>
+            ) : (
+              <>
+                {navLink('/dashboard', 'Dashboard')}
+                {navLink('/cases', 'Cases')}
+                {isClient && navLink('/lawyers', 'Find Lawyers')}
+                {navLink('/consultations', 'Consultations')}
+                {navLink('/documents', 'Documents')}
+                {navLink('/invoices', 'Invoices')}
+                {navLink('/deadlines', 'Deadlines')}
+                {navLink('/chat', 'Chat', unreadCount > 0)}
+              </>
+            )}
           </ul>
           <div className="d-flex align-items-center gap-3">
             <DeadlineBadge />

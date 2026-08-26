@@ -15,8 +15,8 @@ const DeadlineBadge = () => {
         const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
         const urgent = data.deadlines.filter(d => new Date(d.deadlineDate) <= in48h);
         setUpcoming(urgent);
-      } catch {
-        // Silently fail if not logged in
+      } catch (err) {
+        console.warn('DeadlineBadge: Failed to load deadlines', err);
       }
     };
     load();

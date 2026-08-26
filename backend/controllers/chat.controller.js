@@ -9,6 +9,14 @@ exports.getOrCreateConversation = async (req, res) => {
     const { userId } = req.body;
     const myId = req.user.id;
 
+    // Check if user is verified by admin
+    if (!req.user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your profile is pending admin verification. You cannot send messages yet.'
+      });
+    }
+
     // Find existing conversation
     let conversation = await Conversation.findOne({
       participants: { $all: [myId, userId], $size: 2 }

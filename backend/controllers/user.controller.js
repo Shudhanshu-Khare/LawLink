@@ -74,10 +74,13 @@ exports.getLawyers = async (req, res) => {
   try {
     const { practiceArea, city, minFee, maxFee, language, search } = req.query;
 
-    const filter = { role: 'lawyer' };
+    // Escape special regex characters to prevent ReDoS attacks
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const filter = { role: 'lawyer', isVerified: true, isBlocked: { $ne: true } };
 
     if (practiceArea) filter.practiceAreas = practiceArea;
-    if (city) filter['location.city'] = new RegExp(city, 'i');
+    if (city) filter['location.city'] = new RegExp(escapeRegex(city), 'i');
     if (language) filter.languages = language;
     if (minFee || maxFee) {
       filter.feePerHour = {};
@@ -85,9 +88,10 @@ exports.getLawyers = async (req, res) => {
       if (maxFee) filter.feePerHour.$lte = Number(maxFee);
     }
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { bio: new RegExp(search, 'i') }
+        { name: new RegExp(escaped, 'i') },
+        { bio: new RegExp(escaped, 'i') }
       ];
     }
 
@@ -110,9 +114,11 @@ exports.getClients = async (req, res) => {
     const filter = { role: 'client' };
 
     if (search) {
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') }
+        { name: new RegExp(escaped, 'i') },
+        { email: new RegExp(escaped, 'i') }
       ];
     }
 
@@ -121,6 +127,24 @@ exports.getClients = async (req, res) => {
       .sort({ name: 1 });
 
     res.json({ success: true, count: clients.length, clients });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Get a single user by ID (public profile)
+// @route   GET /api/users/public/:id
+// @access  Public
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('name email profilePhoto bio location practiceAreas feePerHour yearsOfExperience languages courtAdmissions barRegistrationNumber role');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -6,6 +6,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const http = require('http');
 const dns = require('dns');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
 
 // Fix DNS for MongoDB Atlas SRV lookups (use Google DNS)
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -33,12 +35,14 @@ const socketState = setupSocket(io);
 app.set('io', io);
 app.set('socketState', socketState);
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // ── Security Middleware ──
 app.use(require('helmet')());                     // Set secure HTTP headers
 app.use(require('express-mongo-sanitize')());      // Prevent NoSQL injection
 app.use(require('express-rate-limit')({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 500,                   // Increased for dev (socket.io polling uses many requests)
+  max: isProduction ? 100 : 500,  // Stricter in production
   message: { success: false, message: 'Too many requests, please try again later' },
   skip: (req) => req.path.startsWith('/socket.io')  // Don't rate-limit socket.io
 }));
@@ -48,8 +52,12 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// ── Request Logging ──
+app.use(morgan(isProduction ? 'combined' : 'dev'));
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -63,6 +71,7 @@ const chatRoutes = require('./routes/chat.routes');
 const documentRoutes = require('./routes/document.routes');
 const invoiceRoutes = require('./routes/invoice.routes');
 const deadlineRoutes = require('./routes/deadline.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 // --- MOUNT ROUTES ---
 app.use('/api/auth', authRoutes);
@@ -73,6 +82,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/deadlines', deadlineRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

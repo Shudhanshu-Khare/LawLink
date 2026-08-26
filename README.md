@@ -1,109 +1,110 @@
 # LawLink — Legal Services Platform
 
-A full-stack, real-time legal workflow platform connecting clients and lawyers. Built with React 18, Node.js, MongoDB, and Socket.io.
+A production-ready, full-stack legal workflow platform that connects clients with lawyers through real-time communication, case tracking, consultation booking, document generation, invoicing, and deadline management — all secured with industry-standard authentication and privacy practices.
+
+Built with React 18, Node.js, Express, MongoDB, and Socket.io.
 
 ---
 
-## Authentication
+## Features
 
-LawLink supports **two sign-in methods** — strictly separated per account:
+### Authentication & Security
+- **Dual sign-in** — Google OAuth 2.0 or email + OTP verification (strictly separated per account)
+- **httpOnly cookie-based JWT** — tokens are never exposed to JavaScript, preventing XSS token theft
+- **Password reset via email** — SHA-256 hashed tokens with 30-minute expiry
+- **Input validation** — all API routes validated with express-validator
+- **Security headers** — Helmet (11+ headers), NoSQL injection prevention, rate limiting, CORS
+- **OTP brute-force protection** — max 5 attempts, auto-expiry via MongoDB TTL index
+- **Admin verification gate** — new accounts require admin approval before accessing the platform
 
-| Method | How it works |
-|--------|-------------|
-| **Google Sign-In** | One-click OAuth 2.0 — no password needed |
-| **Email + Password** | OTP email verification via Nodemailer |
-
-> An account registered with Google can only sign in with Google.  
-> An account registered with email+password can only sign in with email+password.
+### Core Modules
+- **Real-time Chat** — WhatsApp-style messaging with sent/read receipts (✓/✓✓), typing indicators, online status, and unread notification badges via Socket.io
+- **Case Management** — 6-stage lifecycle (Intake → Investigation → Negotiation → Litigation → Resolution → Closed) with animated milestone timeline
+- **Consultation Booking** — 14-day calendar with 9 hourly slots (9 AM–6 PM), real-time availability, and past-slot filtering
+- **Legal Document Hub** — Lawyers create legal documents, auto-generate PDFs via pdfkit, clients download
+- **Invoice System** — Billable hours tracking with line items, PDF invoice generation, and payment status flow
+- **Deadline Calendar** — Court deadline management with daily email reminders via node-cron and 48-hour urgency alerts
+- **Lawyer Directory** — Searchable and filterable by practice area, experience, fee range, and live "slots available today"
+- **Admin Dashboard** — Real-time stats (verified, pending, blocked users), verify/block/delete actions, role-based tables
+- **Profile Management** — Lawyers update professional details (bar number, fees, practice areas, bio)
 
 ---
 
 ## Architecture
 
 ```
-React 18 (Vite)  ←→  Express API  ←→  MongoDB Atlas
-       ↕                  ↕
-  Socket.io Client  ←→  Socket.io Server
+React 18 (Vite)  ←→  Express REST API  ←→  MongoDB Atlas
+       ↕                    ↕
+ Socket.io Client  ←→  Socket.io Server
                           ↕
-                    node-cron (Daily Jobs)
-                    Nodemailer (OTP + Reminders)
+                    Nodemailer (OTP + Reminders + Password Reset)
                     pdfkit (PDF Generation)
+                    node-cron (Daily Deadline Jobs)
                     Google OAuth 2.0
 ```
 
 ---
 
-## Key Features
+## Tech Stack
 
-| Feature | Description |
-|---|---|
-| **Google OAuth + OTP Auth** | Dual authentication — Google sign-in or email+OTP verification with strict method separation |
-| **Case Timeline Tracker** | 6-stage lifecycle (Intake → Closed) with animated milestone timeline and real-time Socket.io updates |
-| **Real-time Chat** | WhatsApp-style messaging with sent/read receipts, typing indicators, and unread notification dot |
-| **Consultation Booking** | 14-day calendar with 9 hourly slots (9AM-6PM), real-time availability, past-slot filtering |
-| **Legal Document Hub** | Lawyers create legal documents → PDF auto-generated via pdfkit → clients download |
-| **Invoice System** | Billable hours tracking with line items → PDF invoice generation → payment flow |
-| **Deadline Calendar** | Court deadline management with node-cron daily reminders + 48hr urgency alerts |
-| **Lawyer Directory** | Searchable directory with practice areas, experience, fee info, and live "slots available today" |
-| **Profile Management** | Lawyers can update professional details (bar number, fee, practice areas) from profile page |
-| **Security** | Helmet, rate limiting, NoSQL injection prevention, JWT + bcrypt RBAC |
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | React 18, React Router v6, Framer Motion, Bootstrap 5, Axios, Socket.io Client, @react-oauth/google |
+| **Backend** | Node.js, Express, Socket.io, Mongoose, JWT, bcrypt, Multer, pdfkit, node-cron, Nodemailer |
+| **Security** | Helmet, express-rate-limit, express-mongo-sanitize, express-validator, cookie-parser, morgan |
+| **Database** | MongoDB Atlas (12 performance indexes, TTL indexes for OTP auto-cleanup) |
+| **Testing** | Jest, Supertest |
 
 ---
 
-## Tech Stack
+## Security Implementation
 
-**Frontend**: React 18, React Router v6, Framer Motion, Bootstrap 5, Axios, Socket.io Client, @react-oauth/google  
-**Backend**: Node.js, Express, Socket.io, Mongoose, JWT, bcrypt, Multer, pdfkit, node-cron, Nodemailer, google-auth-library  
-**Security**: Helmet, express-rate-limit, express-mongo-sanitize  
-**Database**: MongoDB (Atlas)  
-**Testing**: Jest, Supertest  
+| Layer | What's Protected |
+|-------|-----------------|
+| **Authentication** | bcrypt (12 salt rounds), JWT in httpOnly/secure/sameSite cookies, Google OAuth server-side verification |
+| **Input** | express-validator on all auth routes, Mongoose schema validation, express-mongo-sanitize |
+| **Network** | Helmet headers, CORS with credentials, rate limiting (100 req/15 min production), request logging (morgan) |
+| **Data** | Password field excluded from all API responses (`select: false`), OTP stored in MongoDB with TTL auto-expiry |
+| **Session** | Logout clears httpOnly cookie server-side, Socket.io authenticated via JWT handshake |
+| **Admin** | Role-based access control, admin can't self-block/delete, blocked users enforced on both login methods |
 
 ---
 
 ## Quick Start
 
 ```bash
-# Clone
-git clone https://github.com/YOUR_USERNAME/lawlink.git
-cd lawlink
+# Clone the repository
+git clone https://github.com/Shudhanshu-Khare/LawLink.git
+cd LawLink
 
-# Install all dependencies
+# Install all dependencies (root + backend + frontend)
 npm run install-all
 
-# Set up environment
-cp backend/config/config.env.example backend/config/config.env
+# Configure environment variables
+cp .env.example backend/config/config.env
 # Edit config.env with your MongoDB URI, JWT secret, Gmail credentials, and Google Client ID
 
-# Run both frontend + backend
+# Start development servers (frontend + backend)
 npm run dev
 ```
 
-Frontend: `http://localhost:5173` · Backend: `http://localhost:5000`
+Frontend runs at `http://localhost:5173` · Backend at `http://localhost:5000`
 
 ---
 
 ## Environment Variables
 
+Create `backend/config/config.env` using `.env.example` as a template:
+
 | Variable | Description |
 |----------|-------------|
 | `MONGO_URI` | MongoDB Atlas connection string |
-| `JWT_SECRET` | Secret key for JWT signing |
-| `JWT_EXPIRE` | Token expiry (e.g., `30d`) |
-| `EMAIL_USER` | Gmail address for sending OTPs |
-| `EMAIL_PASS` | Gmail App Password (16-char) |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `CLIENT_URL` | Frontend URL for CORS |
-
----
-
-## Tests
-
-```bash
-cd backend
-npm test
-```
-
-8 Jest API tests covering auth registration, login, token validation, duplicate rejection, and NoSQL injection prevention.
+| `JWT_SECRET` | Secret key for JWT signing (use a long random string) |
+| `JWT_EXPIRE` | Token expiry duration (e.g., `30d`) |
+| `EMAIL_USER` | Gmail address for sending OTPs and reminders |
+| `EMAIL_PASS` | Gmail App Password (16-character) |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID |
+| `CLIENT_URL` | Frontend URL for CORS (default: `http://localhost:5173`) |
 
 ---
 
@@ -111,38 +112,52 @@ npm test
 
 ```
 lawlink/
-├── src/                    # React frontend (Vite)
-│   ├── components/         # Navbar, DeadlineBadge
-│   ├── pages/              # Route pages (11 pages)
-│   ├── contexts/           # AuthContext
-│   ├── hooks/              # useSocket
-│   └── services/           # Axios API layer
 ├── backend/
-│   ├── controllers/        # Route handlers (8 controllers)
-│   ├── models/             # 8 Mongoose schemas
-│   ├── routes/             # Express route files
-│   ├── middleware/          # Auth + upload middleware
-│   ├── services/           # PDF, email, cron services
+│   ├── controllers/        # 9 route handlers (auth, admin, case, chat, etc.)
+│   ├── models/             # 9 Mongoose schemas with indexes
+│   ├── routes/             # Express route definitions
+│   ├── middleware/         # JWT auth + file upload middleware
+│   ├── validators/         # express-validator rules
+│   ├── services/           # Email, PDF, and reminder services
 │   ├── socket/             # Socket.io event handlers
-│   ├── tests/              # Jest API tests
-│   └── utils/              # Pagination helper
-└── docs/                   # Build guides (9 steps)
+│   ├── tests/              # Jest + Supertest API tests
+│   ├── utils/              # Pagination helper
+│   └── server.js           # Express app entry point
+├── src/
+│   └── src/
+│       ├── pages/          # 14 application screens
+│       ├── components/     # Navbar, DeadlineBadge
+│       ├── contexts/       # Auth context (cookie-based)
+│       ├── hooks/          # Socket.io hook
+│       └── services/       # Axios API layer
+└── .env.example            # Environment variable template
 ```
 
 ---
 
 ## API Endpoints
 
-| Group | Endpoints | Auth |
-|---|---|---|
-| Auth | `POST /register`, `POST /verify-otp`, `POST /login`, `POST /google`, `POST /google-register`, `GET /me`, `PUT /profile` | Public/JWT |
-| Users | `GET /lawyers`, `GET /:id` | Public |
-| Consultations | `POST /`, `GET /`, `PUT /:id/status`, `GET /availability/:lawyerId` | JWT + RBAC |
-| Cases | `POST /`, `GET /`, `PUT /:id/status`, `POST /:id/milestone` | JWT + RBAC |
-| Chat | `GET /conversations`, `GET /messages/:id`, `GET /unread-count` | JWT |
-| Documents | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/revoke` | JWT + RBAC |
-| Invoices | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/pay` | JWT + RBAC |
-| Deadlines | `POST /`, `GET /`, `DELETE /:id` | JWT + RBAC |
+| Module | Endpoints | Auth |
+|--------|-----------|------|
+| **Auth** | `POST /register`, `POST /verify-otp`, `POST /resend-otp`, `POST /login`, `POST /google`, `POST /google-register`, `GET /me`, `PUT /profile`, `POST /logout`, `POST /forgot-password`, `PUT /reset-password/:token` | Public / JWT |
+| **Admin** | `GET /stats`, `GET /lawyers`, `GET /clients`, `POST /verify/:id`, `POST /block/:id`, `DELETE /:id` | JWT + Admin |
+| **Users** | `GET /lawyers`, `GET /:id` | Public |
+| **Consultations** | `POST /`, `GET /`, `PUT /:id/status`, `GET /availability/:lawyerId` | JWT + RBAC |
+| **Cases** | `POST /`, `GET /`, `PUT /:id/status`, `POST /:id/milestone` | JWT + RBAC |
+| **Chat** | `GET /conversations`, `GET /messages/:id`, `GET /unread-count` | JWT |
+| **Documents** | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/revoke` | JWT + RBAC |
+| **Invoices** | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/pay` | JWT + RBAC |
+| **Deadlines** | `POST /`, `GET /`, `DELETE /:id` | JWT + RBAC |
+
+---
+
+## Tests
+
+```bash
+cd backend && npm test
+```
+
+8 API tests covering registration, login, token validation, duplicate rejection, and NoSQL injection prevention.
 
 ---
 

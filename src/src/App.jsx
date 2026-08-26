@@ -16,12 +16,17 @@ import DocumentHub from './pages/DocumentHub';
 import InvoiceManager from './pages/InvoiceManager';
 import DeadlineCalendar from './pages/DeadlineCalendar';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
   if (loading) return <div className="text-center mt-5"><div className="spinner-border" /></div>;
   if (!isAuthenticated) return <Navigate to="/login" />;
+  // Admin should only access admin routes — redirect away from everything else
+  if (user.role === 'admin' && (!roles || !roles.includes('admin'))) return <Navigate to="/admin" />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
   return children;
 };
@@ -29,8 +34,21 @@ const ProtectedRoute = ({ children, roles }) => {
 // Dashboard — shows stats overview with navigation cards
 const Dashboard = () => {
   const { user, isLawyer, isClient } = useAuth();
+
+  // Show verification pending banner for unverified users
+  const showVerificationBanner = user && !user.isVerified && user.role !== 'admin';
+
   return (
     <div className="container py-5">
+      {showVerificationBanner && (
+        <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+          <span style={{ fontSize: 24, marginRight: 12 }}>⏳</span>
+          <div>
+            <strong>Profile Pending Verification</strong>
+            <p className="mb-0 small">Your account is being reviewed by an admin. {user.role === 'client' ? 'You can browse lawyers but cannot book consultations or send messages until verified.' : 'Your profile will appear in Find Lawyers once verified.'}</p>
+          </div>
+        </div>
+      )}
       <div className="mb-4">
         <h2 className="fw-bold">Welcome, {user?.name}!</h2>
         <p className="text-muted">Role: <span className="badge bg-primary">{user?.role}</span> · {user?.email}</p>
@@ -108,11 +126,18 @@ const Dashboard = () => {
 };
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Redirect helper — admin goes to /admin, others to /dashboard
+  const defaultRoute = isAuthenticated && user?.role === 'admin' ? '/admin' : '/dashboard';
+
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Login />} />
+      <Route path="/register" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Register />} />
+
+      <Route path="/forgot-password" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       <Route path="/lawyers" element={<LawyerDirectory />} />
 
@@ -125,8 +150,9 @@ function AppRoutes() {
       <Route path="/invoices" element={<ProtectedRoute><InvoiceManager /></ProtectedRoute>} />
       <Route path="/deadlines" element={<ProtectedRoute><DeadlineCalendar /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
 
-      <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+      <Route path="*" element={<Navigate to={isAuthenticated ? defaultRoute : "/login"} />} />
     </Routes>
   );
 }

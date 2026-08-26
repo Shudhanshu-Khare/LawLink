@@ -83,6 +83,9 @@ const Login = () => {
               <label className="form-label">Password</label>
               <input type="password" name="password" className="form-control"
                      value={formData.password} onChange={handleChange} required />
+              <div className="text-end mt-1">
+                <Link to="/forgot-password" className="text-decoration-none small">Forgot Password?</Link>
+              </div>
             </div>
             <button type="submit" className="btn btn-primary w-100" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}

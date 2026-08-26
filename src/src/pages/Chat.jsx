@@ -144,8 +144,8 @@ const Chat = () => {
   };
 
   const getStatusIcon = (status) => {
-    if (status === 'read') return <span style={{ color: '#3b82f6' }}>✓✓</span>;
-    return '✓';  // sent or delivered both show single tick
+    if (status === 'read') return <span style={{ color: '#ffffff', fontWeight: 'bold', textShadow: '0 0 2px rgba(0,0,0,0.3)' }}>✓✓</span>;
+    return <span style={{ color: 'rgba(255,255,255,0.6)' }}>✓</span>;  // sent/delivered: faded white single tick
   };
 
   return (
@@ -254,6 +254,7 @@ const Chat = () => {
               <div className="p-3 border-top">
                 <div className="d-flex gap-2">
                   <input type="text" className="form-control" placeholder="Type a message..."
+                         maxLength={2000}
                          value={newMsg} onChange={handleTyping}
                          onKeyDown={e => e.key === 'Enter' && sendMessage()} />
                   <button className="btn btn-primary" onClick={sendMessage}>Send</button>

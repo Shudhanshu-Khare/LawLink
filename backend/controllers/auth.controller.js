@@ -1,26 +1,49 @@
-// backend/controllers/auth.controller.js
 const User = require('../models/User.model');
+const OTP = require('../models/OTP.model');
 const { OAuth2Client } = require('google-auth-library');
 const nodemailer = require('nodemailer');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// In-memory OTP store: email → { otp, expiresAt, userData }
-const otpStore = new Map();
+// Admin email — auto-detected on Google Sign-In
+const ADMIN_EMAIL = 'khareshudhanshu247@gmail.com';
 
-// ── Helper: Generate 6-digit OTP ──
+// Cookie options for JWT
+const isProduction = process.env.NODE_ENV === 'production';
+const COOKIE_OPTIONS = {
+  httpOnly: true,         // JS cannot access this cookie
+  secure: isProduction,   // HTTPS only in production
+  sameSite: isProduction ? 'strict' : 'lax',  // CSRF protection
+  maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days (matches JWT_EXPIRE)
+  path: '/'
+};
+
+// Helper: sets JWT as httpOnly cookie + returns user data
+const sendTokenResponse = (res, user, statusCode = 200) => {
+  const token = user.getSignedJwtToken();
+  const userResponse = user.toObject();
+  delete userResponse.password;
+
+  res.status(statusCode)
+    .cookie('token', token, COOKIE_OPTIONS)
+    .json({ success: true, token, user: userResponse });
+};
+
+// OTP generator (no in-memory store — uses MongoDB with TTL)
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// ── Helper: Send OTP email ──
-const sendOTPEmail = async (email, otp) => {
+async function sendOTPEmail(email, otp) {
+  // if email creds aren't set, just log (useful during dev)
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[OTP LOG] To: ${email} | OTP: ${otp}`);
-    return true; // Dev fallback — log to console
+    console.log(`[OTP] ${email} → ${otp}`);
+    return true;
   }
+
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
   });
+
   await transporter.sendMail({
     from: `"LawLink" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -35,20 +58,17 @@ const sendOTPEmail = async (email, otp) => {
     `
   });
   return true;
-};
+}
 
-// @desc    Register — Step 1: Send OTP
-// @route   POST /api/auth/register
-// @access  Public
+
+/**
+ * POST /api/auth/register
+ * Step 1 of email registration — validates input, sends OTP
+ */
 exports.register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide name, email and password' });
-    }
-
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       const method = existingUser.authMethod === 'google' ? 'Google sign-in' : 'email & password';
@@ -58,53 +78,52 @@ exports.register = async (req, res) => {
       });
     }
 
-    if (role && !['client', 'lawyer'].includes(role)) {
-      return res.status(400).json({ success: false, message: 'Role must be client or lawyer' });
-    }
-
-    // Generate OTP and store with user data
     const otp = generateOTP();
-    otpStore.set(email, {
-      otp,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-      userData: req.body
-    });
 
-    // Send OTP
+    // Upsert OTP in MongoDB (replaces any existing OTP for this email)
+    await OTP.findOneAndUpdate(
+      { email },
+      { otp, userData: req.body, attempts: 0, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
     await sendOTPEmail(email, otp);
-
     res.json({ success: true, message: 'OTP sent to your email', requiresOTP: true });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Register — Step 2: Verify OTP and create account
-// @route   POST /api/auth/verify-otp
-// @access  Public
+
+/**
+ * POST /api/auth/verify-otp
+ * Step 2 — checks OTP, creates the account if valid
+ */
 exports.verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const stored = otpStore.get(email);
+    const stored = await OTP.findOne({ email });
     if (!stored) {
       return res.status(400).json({ success: false, message: 'No OTP found. Please register again.' });
     }
 
-    if (Date.now() > stored.expiresAt) {
-      otpStore.delete(email);
-      return res.status(400).json({ success: false, message: 'OTP expired. Please register again.' });
+    // Brute force protection — max 5 attempts per OTP
+    if (stored.attempts >= 5) {
+      await OTP.deleteOne({ email });
+      return res.status(429).json({ success: false, message: 'Too many failed attempts. Please register again.' });
     }
 
     if (stored.otp !== otp) {
+      await OTP.updateOne({ email }, { $inc: { attempts: 1 } });
       return res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
     }
 
-    // OTP verified — create user
+    // OTP checks out — build user object
     const { name, email: userEmail, password, role } = stored.userData;
     const userData = { name, email: userEmail, password, role: role || 'client', authMethod: 'password' };
 
-    // Add lawyer fields
+    // attach lawyer-specific fields if applicable
     if (role === 'lawyer') {
       const { barRegistrationNumber, yearsOfExperience, feePerHour, practiceAreas, bio } = stored.userData;
       if (barRegistrationNumber) userData.barRegistrationNumber = barRegistrationNumber;
@@ -115,33 +134,26 @@ exports.verifyOTP = async (req, res) => {
     }
 
     const user = await User.create(userData);
-    otpStore.delete(email);
+    await OTP.deleteOne({ email });
 
-    const token = user.getSignedJwtToken();
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.status(201).json({ success: true, token, user: userResponse });
+    sendTokenResponse(res, user, 201);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Resend OTP
-// @route   POST /api/auth/resend-otp
-// @access  Public
+
+/** POST /api/auth/resend-otp */
 exports.resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
-    const stored = otpStore.get(email);
+    const stored = await OTP.findOne({ email });
     if (!stored) {
       return res.status(400).json({ success: false, message: 'No pending registration. Please register again.' });
     }
 
     const otp = generateOTP();
-    stored.otp = otp;
-    stored.expiresAt = Date.now() + 5 * 60 * 1000;
-    otpStore.set(email, stored);
+    await OTP.updateOne({ email }, { otp, createdAt: new Date() });  // Reset TTL
 
     await sendOTPEmail(email, otp);
     res.json({ success: true, message: 'New OTP sent to your email' });
@@ -150,9 +162,8 @@ exports.resendOTP = async (req, res) => {
   }
 };
 
-// @desc    Login with email + password
-// @route   POST /api/auth/login
-// @access  Public
+
+/** POST /api/auth/login — email + password only */
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -166,7 +177,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Check auth method
+    // don't let google-registered users login with password
     if (user.authMethod === 'google') {
       return res.status(400).json({
         success: false,
@@ -174,40 +185,43 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Check if account is blocked by admin
+    if (user.isBlocked) {
+      return res.status(403).json({ success: false, message: 'Account suspended by admin. Contact support for assistance.' });
+    }
+
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const token = user.getSignedJwtToken();
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.json({ success: true, token, user: userResponse });
+    sendTokenResponse(res, user);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Google sign-in / sign-up
-// @route   POST /api/auth/google
-// @access  Public
+
+/**
+ * POST /api/auth/google
+ * Handles both login and signup initiation via Google OAuth.
+ * If user exists with google auth → logs them in.
+ * If user exists with password auth → rejects (strict separation).
+ * If new user → returns googleData for profile completion.
+ */
 exports.googleAuth = async (req, res) => {
   try {
     const { credential } = req.body;
 
-    // Verify Google token
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID
     });
     const { sub: googleId, email, name } = ticket.getPayload();
 
-    // Check if user exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      // User exists — check auth method
       if (existingUser.authMethod === 'password') {
         return res.status(400).json({
           success: false,
@@ -215,13 +229,34 @@ exports.googleAuth = async (req, res) => {
         });
       }
 
-      // Google user — log them in
-      const token = existingUser.getSignedJwtToken();
-      const userResponse = existingUser.toObject();
-      return res.json({ success: true, token, user: userResponse });
+      // Check if account is blocked by admin
+      if (existingUser.isBlocked) {
+        return res.status(403).json({ success: false, message: 'Account suspended by admin. Contact support for assistance.' });
+      }
+
+      // Auto-upgrade to admin if this is the admin email
+      if (email === ADMIN_EMAIL && existingUser.role !== 'admin') {
+        existingUser.role = 'admin';
+        existingUser.isVerified = true;
+        await existingUser.save();
+      }
+
+      // returning google user — log them in
+      return sendTokenResponse(res, existingUser);
     }
 
-    // New user — needs to complete profile (select role, etc.)
+    // Auto-detect admin by email
+    if (email === ADMIN_EMAIL) {
+      const adminUser = await User.create({
+        name, email, googleId,
+        role: 'admin',
+        authMethod: 'google',
+        isVerified: true
+      });
+      return sendTokenResponse(res, adminUser);
+    }
+
+    // new user — frontend will show the role-selection form
     res.json({
       success: true,
       newUser: true,
@@ -232,14 +267,15 @@ exports.googleAuth = async (req, res) => {
   }
 };
 
-// @desc    Complete Google registration (new user picks role + details)
-// @route   POST /api/auth/google-register
-// @access  Public
+
+/**
+ * POST /api/auth/google-register
+ * Called after a new Google user picks their role + fills lawyer details.
+ */
 exports.googleRegister = async (req, res) => {
   try {
     const { googleId, email, name, role, barRegistrationNumber, yearsOfExperience, feePerHour, practiceAreas, bio } = req.body;
 
-    // Double-check email not taken
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Email already registered' });
@@ -260,30 +296,29 @@ exports.googleRegister = async (req, res) => {
     }
 
     const user = await User.create(userData);
-    const token = user.getSignedJwtToken();
-    const userResponse = user.toObject();
-
-    res.status(201).json({ success: true, token, user: userResponse });
+    sendTokenResponse(res, user, 201);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
+
+/** GET /api/auth/me — returns the logged-in user's profile */
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    res.status(200).json({ success: true, user });
+    res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/auth/profile
-// @access  Private
+
+/**
+ * PUT /api/auth/profile
+ * Whitelist approach — only specific fields can be updated.
+ * Lawyers get access to professional fields, everyone can edit bio.
+ */
 exports.updateProfile = async (req, res) => {
   try {
     const allowedFields = ['bio'];
@@ -298,6 +333,101 @@ exports.updateProfile = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true, runValidators: true });
     res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+/** POST /api/auth/logout — clears the httpOnly JWT cookie */
+exports.logout = (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0),
+    path: '/'
+  });
+  res.json({ success: true, message: 'Logged out successfully' });
+};
+
+
+/** POST /api/auth/forgot-password — sends a password reset email */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if email exists — always show success
+      return res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
+    }
+
+    if (user.authMethod === 'google') {
+      return res.status(400).json({
+        success: false,
+        message: 'This account uses Google sign-in. Please sign in with Google.'
+      });
+    }
+
+    // Generate a secure token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+    await user.save();
+
+    // Build reset URL
+    const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetURL = `${clientURL}/reset-password/${resetToken}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+
+    await transporter.sendMail({
+      from: `"LawLink" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'LawLink — Password Reset',
+      html: `
+        <div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px">
+          <h2 style="color:#0f172a">Password Reset</h2>
+          <p>You requested a password reset. Click the link below (valid for 30 minutes):</p>
+          <a href="${resetURL}" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin:16px 0">Reset Password</a>
+          <p style="color:#64748b;font-size:13px">If you didn't request this, ignore this email.</p>
+        </div>
+      `
+    });
+
+    res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+/** PUT /api/auth/reset-password/:token — resets the password */
+exports.resetPassword = async (req, res) => {
+  try {
+    const crypto = require('crypto');
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save(); // pre-save hook hashes the password
+
+    sendTokenResponse(res, user);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -1,7 +1,13 @@
 // backend/middleware/upload.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
+// Ensure profiles upload directory exists
+const profilesDir = path.join(__dirname, '..', 'uploads', 'profiles');
+if (!fs.existsSync(profilesDir)) {
+  fs.mkdirSync(profilesDir, { recursive: true });
+}
 // Profile photo storage
 const profileStorage = multer.diskStorage({
   destination: (req, file, cb) => {

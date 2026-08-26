@@ -1,11 +1,9 @@
-// backend/controllers/case.controller.js
 const Case = require('../models/Case.model');
 
-// Valid status progression (order matters)
+// valid progression order — case can only move forward (or jump to closed)
 const STATUS_ORDER = ['intake', 'investigation', 'filing', 'hearing', 'resolution', 'closed'];
 
-// @desc    Create a new case
-// @route   POST /api/cases
+/** POST /api/cases — lawyer creates a new case for a client */
 exports.createCase = async (req, res) => {
   try {
     const { clientId, title, description, legalArea } = req.body;
@@ -36,8 +34,7 @@ exports.createCase = async (req, res) => {
   }
 };
 
-// @desc    Get all cases for current user
-// @route   GET /api/cases
+/** GET /api/cases — returns cases for the logged-in user (filtered by role) */
 exports.getCases = async (req, res) => {
   try {
     const filter = {};
@@ -59,8 +56,7 @@ exports.getCases = async (req, res) => {
   }
 };
 
-// @desc    Get single case with full milestones
-// @route   GET /api/cases/:id
+/** GET /api/cases/:id — single case with full milestone history */
 exports.getCase = async (req, res) => {
   try {
     const caseDoc = await Case.findById(req.params.id)
@@ -72,7 +68,7 @@ exports.getCase = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Case not found' });
     }
 
-    // Verify access
+    // only the assigned client, lawyer, or admin can view
     const hasAccess = caseDoc.client._id.toString() === req.user.id ||
                       caseDoc.lawyer._id.toString() === req.user.id ||
                       req.user.role === 'admin';
@@ -86,8 +82,7 @@ exports.getCase = async (req, res) => {
   }
 };
 
-// @desc    Add milestone to case timeline
-// @route   PUT /api/cases/:id/milestone
+/** PUT /api/cases/:id/milestone — lawyer adds a milestone note */
 exports.addMilestone = async (req, res) => {
   try {
     const { stage, note } = req.body;
@@ -97,7 +92,6 @@ exports.addMilestone = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Case not found' });
     }
 
-    // Only assigned lawyer can add milestones
     if (caseDoc.lawyer.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Only the assigned lawyer can add milestones' });
     }
@@ -110,7 +104,6 @@ exports.addMilestone = async (req, res) => {
     });
 
     await caseDoc.save();
-
     const populated = await caseDoc.populate('milestones.addedBy', 'name role');
 
     res.json({ success: true, case: populated });
@@ -119,8 +112,11 @@ exports.addMilestone = async (req, res) => {
   }
 };
 
-// @desc    Advance case to next stage
-// @route   PUT /api/cases/:id/status
+/**
+ * PUT /api/cases/:id/status
+ * Advances case to next stage. Must follow STATUS_ORDER
+ * unless jumping directly to 'closed' (allowed from any stage).
+ */
 exports.advanceStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -134,11 +130,9 @@ exports.advanceStatus = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only the assigned lawyer can advance the case' });
     }
 
-    // Validate progression
     const currentIdx = STATUS_ORDER.indexOf(caseDoc.status);
     const newIdx = STATUS_ORDER.indexOf(status);
 
-    // Allow forward progression or jump to 'closed' from any stage
     if (status !== 'closed' && newIdx !== currentIdx + 1) {
       return res.status(400).json({
         success: false,

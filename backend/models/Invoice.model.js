@@ -46,13 +46,30 @@ const InvoiceSchema = new mongoose.Schema({
   paidAt: Date
 }, { timestamps: true });
 
-// Auto-generate invoice number
+// Auto-generate invoice number (race-safe with retry)
 InvoiceSchema.pre('save', async function(next) {
   if (!this.invoiceNumber) {
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    const count = await mongoose.model('Invoice').countDocuments();
-    this.invoiceNumber = `LW-INV-${year}${month}-${String(count + 1).padStart(4, '0')}`;
+    const prefix = `LW-INV-${year}${month}-`;
+    const InvoiceModel = mongoose.model('Invoice');
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const last = await InvoiceModel.findOne({ invoiceNumber: new RegExp(`^${prefix}`) })
+        .sort({ _id: -1 })
+        .select('invoiceNumber');
+      
+      let nextNum = 1;
+      if (last && last.invoiceNumber) {
+        const parts = last.invoiceNumber.split('-');
+        nextNum = parseInt(parts[parts.length - 1], 10) + 1;
+      }
+      
+      this.invoiceNumber = `${prefix}${String(nextNum).padStart(4, '0')}`;
+      
+      const exists = await InvoiceModel.findOne({ invoiceNumber: this.invoiceNumber });
+      if (!exists) break;
+    }
   }
   next();
 });
