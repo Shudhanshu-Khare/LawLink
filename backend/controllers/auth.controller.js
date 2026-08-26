@@ -13,7 +13,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,         // JS cannot access this cookie
   secure: isProduction,   // HTTPS only in production
-  sameSite: isProduction ? 'strict' : 'lax',  // CSRF protection
+  sameSite: isProduction ? 'none' : 'lax',  // 'none' needed for cross-domain (Vercel→Render)
   maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days (matches JWT_EXPIRE)
   path: '/'
 };
