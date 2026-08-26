@@ -1,7 +1,6 @@
 // backend/services/reminderService.js
 const cron = require('node-cron');
 const Deadline = require('../models/Deadline.model');
-const { sendDeadlineReminder } = require('./emailService');
 
 let io = null; // Set from server.js
 
@@ -35,18 +34,8 @@ const processDeadlineReminders = async () => {
     for (const deadline of upcomingDeadlines) {
       const caseName = `${deadline.case?.caseNumber} — ${deadline.case?.title}`;
 
-      // Send email to each participant
+      // Socket.io push notification to online participants
       for (const participant of deadline.participants) {
-        if (participant.email) {
-          await sendDeadlineReminder(
-            participant.email,
-            participant.name,
-            deadline,
-            caseName
-          );
-        }
-
-        // Socket.io push to online participants
         if (io) {
           io.to(participant._id.toString()).emit('deadline:reminder', {
             deadlineId: deadline._id,

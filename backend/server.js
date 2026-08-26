@@ -105,10 +105,8 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected successfully');
 
-    // Initialize email and cron services
-    const { initTransporter } = require('./services/emailService');
+    // Initialize cron services
     const { initReminderService } = require('./services/reminderService');
-    initTransporter();
     initReminderService(io);
 
     server.listen(PORT, () => {
