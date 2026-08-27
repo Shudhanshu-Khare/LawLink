@@ -11,6 +11,15 @@ const api = axios.create({
   withCredentials: true  // Send httpOnly cookies with every request
 });
 
+// Attach Bearer token as fallback for cross-domain (cookies may be blocked)
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('socketToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Handle 401 responses globally (token expired or missing)
 api.interceptors.response.use(
   (response) => response,
