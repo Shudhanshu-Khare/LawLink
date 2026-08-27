@@ -28,7 +28,8 @@ const Login = () => {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      const msg = err.response?.data?.message || (err.code === 'ECONNABORTED' || !err.response ? 'Server is starting up, please try again in a moment' : 'Login failed');
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,8 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Google sign-in failed');
+      const msg = err.response?.data?.message || (err.code === 'ECONNABORTED' || !err.response ? 'Server is starting up, please try again in a moment' : 'Google sign-in failed');
+      setError(msg);
     } finally {
       setLoading(false);
     }

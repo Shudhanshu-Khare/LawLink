@@ -8,7 +8,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true  // Send httpOnly cookies with every request
+  withCredentials: true,  // Send httpOnly cookies with every request
+  timeout: 30000          // 30s timeout (Render cold start can take 20s)
 });
 
 // Attach Bearer token as fallback for cross-domain (cookies may be blocked)
@@ -20,14 +21,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses globally (token expired or missing)
+// Auto-retry on network errors / timeouts (handles Render cold starts)
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
+
+    // Retry once on network error or timeout (cold start recovery)
+    if (
+      !config._retried &&
+      (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)
+    ) {
+      config._retried = true;
+      // Wait 2 seconds before retry (let server finish waking up)
+      await new Promise(r => setTimeout(r, 2000));
+      return api(config);
+    }
+
+    // Handle 401 responses globally (token expired or missing)
     if (error.response && error.response.status === 401) {
-      const url = error.config?.url || '';
-      // Don't redirect for /auth/me (expected 401 when not logged in)
-      // Don't redirect if already on login/register/forgot-password pages
+      const url = config?.url || '';
       const isAuthCheck = url.includes('/auth/me');
       const isOnAuthPage = ['/login', '/register', '/forgot-password', '/reset-password']
         .some(path => window.location.pathname.startsWith(path));
