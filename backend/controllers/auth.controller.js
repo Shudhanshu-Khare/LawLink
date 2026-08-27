@@ -343,6 +343,8 @@ exports.updateProfile = async (req, res) => {
 exports.logout = (req, res) => {
   res.cookie('token', '', {
     httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     expires: new Date(0),
     path: '/'
   });
