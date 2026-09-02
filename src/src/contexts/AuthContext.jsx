@@ -36,14 +36,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      await api.post('/auth/logout');  // Server clears httpOnly cookie
-    } catch (err) {
-      // Ignore — clear local state regardless
-    }
+    // Clear local state FIRST (synchronous — prevents race conditions)
     localStorage.removeItem('socketToken');
     setSocketToken(null);
     setUser(null);
+
+    // Then clear server-side cookie (best-effort, non-blocking)
+    try {
+      await api.post('/auth/logout');
+    } catch (err) {
+      // Ignore — local state already cleared
+    }
   };
 
   const updateUser = (updatedData) => {

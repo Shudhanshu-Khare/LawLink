@@ -13,7 +13,7 @@ const Navbar = () => {
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = async () => { await logout(); navigate('/login'); };
 
   // Fetch real unread count from API
   const fetchUnread = async () => {
