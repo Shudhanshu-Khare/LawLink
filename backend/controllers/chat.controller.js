@@ -36,7 +36,7 @@ exports.getOrCreateConversation = async (req, res) => {
   }
 };
 
-// @desc    Get all conversations with unread counts
+// @desc    Get all conversations with unread counts (respects clearedBy)
 // @route   GET /api/chat/conversations
 exports.getConversations = async (req, res) => {
   try {
@@ -47,31 +47,65 @@ exports.getConversations = async (req, res) => {
       .populate('lastMessage')
       .sort({ lastMessageAt: -1 });
 
-    // Add unread count for each conversation
+    // Add unread count and filter by clearedBy timestamp
     const withUnread = await Promise.all(conversations.map(async (conv) => {
-      const unreadCount = await Message.countDocuments({
+      const clearedAt = conv.clearedBy?.get(req.user.id);
+      const msgFilter = {
         conversation: conv._id,
         sender: { $ne: req.user.id },
         status: { $ne: 'read' }
-      });
-      return { ...conv.toObject(), unreadCount };
+      };
+      // Only count unread messages AFTER the user's clearedAt
+      if (clearedAt) {
+        msgFilter.createdAt = { $gt: clearedAt };
+      }
+
+      const unreadCount = await Message.countDocuments(msgFilter);
+
+      // Check if there are ANY messages after clearedAt
+      // If not, this conversation was "deleted" and has no new activity — hide it
+      if (clearedAt) {
+        const hasNewMessages = await Message.exists({
+          conversation: conv._id,
+          createdAt: { $gt: clearedAt }
+        });
+        if (!hasNewMessages) return null; // Hide this conversation
+      }
+
+      const convObj = conv.toObject();
+      convObj.unreadCount = unreadCount;
+
+      // If lastMessage is before clearedAt, hide it from preview
+      if (clearedAt && conv.lastMessage && new Date(conv.lastMessage.createdAt) <= clearedAt) {
+        convObj.lastMessage = null;
+      }
+
+      return convObj;
     }));
 
-    res.json({ success: true, conversations: withUnread });
+    // Remove null (hidden) conversations
+    res.json({ success: true, conversations: withUnread.filter(Boolean) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get messages with cursor-based pagination
+// @desc    Get messages with cursor-based pagination (respects clearedBy)
 // @route   GET /api/chat/conversations/:id/messages
 exports.getMessages = async (req, res) => {
   try {
     const { before, limit = 50 } = req.query;
     const filter = { conversation: req.params.id };
 
+    // Respect clearedBy — only show messages after user's clear timestamp
+    const conv = await Conversation.findById(req.params.id).select('clearedBy');
+    const clearedAt = conv?.clearedBy?.get(req.user.id);
+    if (clearedAt) {
+      filter.createdAt = { $gt: clearedAt };
+    }
+
     if (before) {
-      filter.createdAt = { $lt: new Date(before) };
+      filter.createdAt = { ...filter.createdAt, $lt: new Date(before) };
     }
 
     const messages = await Message.find(filter)
@@ -139,20 +173,58 @@ exports.markAsRead = async (req, res) => {
 // @route   GET /api/chat/unread-count
 exports.getUnreadCount = async (req, res) => {
   try {
-    // Find all conversations this user is part of
     const conversations = await Conversation.find({
       participants: req.user.id
-    }).select('_id');
+    }).select('_id clearedBy');
 
-    const convIds = conversations.map(c => c._id);
+    let totalUnread = 0;
+    for (const conv of conversations) {
+      const clearedAt = conv.clearedBy?.get(req.user.id);
+      const filter = {
+        conversation: conv._id,
+        sender: { $ne: req.user.id },
+        status: { $ne: 'read' }
+      };
+      if (clearedAt) {
+        filter.createdAt = { $gt: clearedAt };
+      }
+      totalUnread += await Message.countDocuments(filter);
+    }
 
-    const unreadCount = await Message.countDocuments({
-      conversation: { $in: convIds },
-      sender: { $ne: req.user.id },
-      status: { $ne: 'read' }
+    res.json({ success: true, unreadCount: totalUnread });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Clear/delete chat for current user only
+// @route   DELETE /api/chat/conversations/:id
+exports.clearChat = async (req, res) => {
+  try {
+    const conv = await Conversation.findOne({
+      _id: req.params.id,
+      participants: req.user.id
     });
 
-    res.json({ success: true, unreadCount });
+    if (!conv) {
+      return res.status(404).json({ success: false, message: 'Conversation not found' });
+    }
+
+    // Set clearedAt for this user — messages before this won't be shown to them
+    conv.clearedBy.set(req.user.id, new Date());
+    await conv.save();
+
+    // Also mark all messages as read for this user so unread badge clears
+    await Message.updateMany(
+      {
+        conversation: conv._id,
+        sender: { $ne: req.user.id },
+        status: { $ne: 'read' }
+      },
+      { status: 'read' }
+    );
+
+    res.json({ success: true, message: 'Chat deleted from your account' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

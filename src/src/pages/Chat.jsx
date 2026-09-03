@@ -145,7 +145,26 @@ const Chat = () => {
 
   const getStatusIcon = (status) => {
     if (status === 'read') return <span style={{ color: '#ffffff', fontWeight: 'bold', textShadow: '0 0 2px rgba(0,0,0,0.3)' }}>✓✓</span>;
-    return <span style={{ color: 'rgba(255,255,255,0.6)' }}>✓</span>;  // sent/delivered: faded white single tick
+    return <span style={{ color: 'rgba(255,255,255,0.6)' }}>✓</span>;
+  };
+
+  const handleDeleteChat = async (convId, otherName, e) => {
+    e?.stopPropagation(); // Don't select conversation when clicking delete
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this chat with ${otherName}?\n\nThis will only delete the chat from YOUR account. ${otherName} will still see the full chat history.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/chat/conversations/${convId}`);
+      setConversations(prev => prev.filter(c => c._id !== convId));
+      if (activeConv?._id === convId) {
+        setActiveConv(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      alert('Failed to delete chat');
+    }
   };
 
   return (
@@ -181,11 +200,17 @@ const Chat = () => {
                     )}
                   </div>
                   <div className="flex-grow-1 overflow-hidden">
-                    <div className="d-flex justify-content-between">
+                    <div className="d-flex justify-content-between align-items-center">
                       <strong className="small">{other?.name}</strong>
-                      {conv.unreadCount > 0 && (
-                        <span className="badge bg-primary rounded-pill">{conv.unreadCount}</span>
-                      )}
+                      <div className="d-flex align-items-center gap-1">
+                        {conv.unreadCount > 0 && (
+                          <span className="badge bg-primary rounded-pill">{conv.unreadCount}</span>
+                        )}
+                        <button className="btn btn-sm p-0 text-danger opacity-50"
+                          style={{ fontSize: '14px', lineHeight: 1, border: 'none', background: 'none' }}
+                          title="Delete chat"
+                          onClick={(e) => handleDeleteChat(conv._id, other?.name, e)}>✕</button>
+                      </div>
                     </div>
                     <small className="text-muted text-truncate d-block">
                       {conv.lastMessage?.content || 'Start a conversation'}
@@ -202,11 +227,17 @@ const Chat = () => {
           {activeConv ? (
             <>
               {/* Header */}
-              <div className="p-3 border-bottom d-flex align-items-center">
-                <strong>{getOtherUser(activeConv)?.name}</strong>
-                {onlineUsers.includes(getOtherUser(activeConv)?._id) && (
-                  <small className="text-success ms-2">● Online</small>
-                )}
+              <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <div className="d-flex align-items-center">
+                  <strong>{getOtherUser(activeConv)?.name}</strong>
+                  {onlineUsers.includes(getOtherUser(activeConv)?._id) && (
+                    <small className="text-success ms-2">● Online</small>
+                  )}
+                </div>
+                <button className="btn btn-sm btn-outline-danger" style={{ fontSize: '12px' }}
+                  onClick={(e) => handleDeleteChat(activeConv._id, getOtherUser(activeConv)?.name, e)}>
+                  🗑 Delete Chat
+                </button>
               </div>
 
               {/* Messages */}

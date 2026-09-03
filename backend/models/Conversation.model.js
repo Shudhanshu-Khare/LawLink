@@ -13,6 +13,13 @@ const ConversationSchema = new mongoose.Schema({
   lastMessageAt: {
     type: Date,
     default: Date.now
+  },
+  // Per-user "delete chat" — stores the timestamp when each user cleared the chat
+  // Messages before this timestamp are hidden from that user
+  clearedBy: {
+    type: Map,
+    of: Date,
+    default: {}
   }
 }, { timestamps: true });
 
