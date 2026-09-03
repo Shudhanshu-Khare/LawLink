@@ -1,7 +1,6 @@
 // backend/controllers/document.controller.js
 const LegalDocument = require('../models/LegalDocument.model');
 const { generateLegalDocPDF } = require('../services/pdfService');
-const path = require('path');
 
 // @desc    Create and issue a legal document (PDF auto-generated)
 // @route   POST /api/documents
@@ -20,9 +19,10 @@ exports.createDocument = async (req, res) => {
       issuedAt: new Date()
     });
 
-    // Generate PDF
-    const pdfUrl = await generateLegalDocPDF(doc);
-    doc.pdfUrl = pdfUrl;
+    // Generate PDF in memory and store binary in MongoDB
+    const pdfBuffer = await generateLegalDocPDF(doc);
+    doc.pdfData = pdfBuffer;
+    doc.pdfUrl = `/api/documents/${doc._id}/download`; // API URL instead of file path
     await doc.save();
 
     res.status(201).json({ success: true, document: doc });
@@ -42,7 +42,9 @@ exports.getDocuments = async (req, res) => {
     if (req.query.caseId) filter.case = req.query.caseId;
     if (req.query.status) filter.status = req.query.status;
 
+    // Exclude pdfData from list queries (it's large binary data)
     const documents = await LegalDocument.find(filter)
+      .select('-pdfData')
       .populate('lawyer', 'name email')
       .populate('client', 'name email')
       .populate('case', 'title caseNumber')
@@ -54,11 +56,11 @@ exports.getDocuments = async (req, res) => {
   }
 };
 
-// @desc    Download document PDF
-// @route   GET /api/documents/:id/pdf
+// @desc    Download document PDF (serves from MongoDB)
+// @route   GET /api/documents/:id/download
 exports.downloadPDF = async (req, res) => {
   try {
-    const doc = await LegalDocument.findById(req.params.id);
+    const doc = await LegalDocument.findById(req.params.id).select('pdfData pdfUrl title lawyer client status');
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
 
     // Check access
@@ -70,8 +72,17 @@ exports.downloadPDF = async (req, res) => {
                       doc.client.toString() === req.user.id;
     if (!hasAccess) return res.status(403).json({ success: false, message: 'Not authorized' });
 
-    const filePath = path.join(__dirname, '..', doc.pdfUrl);
-    res.download(filePath);
+    if (!doc.pdfData) {
+      return res.status(404).json({ success: false, message: 'PDF not available — document was created before the storage fix. Please ask the lawyer to re-issue it.' });
+    }
+
+    const fileName = `${doc.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Length': doc.pdfData.length
+    });
+    res.send(doc.pdfData);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -85,7 +96,7 @@ exports.revokeDocument = async (req, res) => {
       { _id: req.params.id, lawyer: req.user.id },
       { status: 'revoked' },
       { new: true }
-    );
+    ).select('-pdfData');
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, document: doc });
   } catch (err) {

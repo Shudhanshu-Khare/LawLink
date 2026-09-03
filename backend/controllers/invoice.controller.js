@@ -3,7 +3,6 @@ const Invoice = require('../models/Invoice.model');
 const Case = require('../models/Case.model');
 const User = require('../models/User.model');
 const { generateInvoicePDF } = require('../services/pdfService');
-const path = require('path');
 
 // @desc    Create invoice from time entries
 // @route   POST /api/invoices
@@ -34,9 +33,10 @@ exports.createInvoice = async (req, res) => {
       dueDate: new Date(dueDate)
     });
 
-    // Generate PDF
-    const pdfUrl = await generateInvoicePDF(invoice);
-    invoice.pdfUrl = pdfUrl;
+    // Generate PDF in memory and store in MongoDB
+    const pdfBuffer = await generateInvoicePDF(invoice);
+    invoice.pdfData = pdfBuffer;
+    invoice.pdfUrl = `/api/invoices/${invoice._id}/download`; // API URL instead of file path
     await invoice.save();
 
     // Update case totalBillableHours
@@ -68,7 +68,9 @@ exports.getInvoices = async (req, res) => {
     if (req.query.caseId) filter.case = req.query.caseId;
     if (req.query.status) filter.status = req.query.status;
 
+    // Exclude pdfData from list queries (large binary)
     let invoices = await Invoice.find(filter)
+      .select('-pdfData')
       .populate('lawyer', 'name email')
       .populate('client', 'name email')
       .populate('case', 'title caseNumber')
@@ -89,19 +91,28 @@ exports.getInvoices = async (req, res) => {
   }
 };
 
-// @desc    Download invoice PDF
-// @route   GET /api/invoices/:id/pdf
+// @desc    Download invoice PDF (serves from MongoDB)
+// @route   GET /api/invoices/:id/download
 exports.downloadInvoicePDF = async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await Invoice.findById(req.params.id).select('pdfData pdfUrl invoiceNumber lawyer client');
     if (!invoice) return res.status(404).json({ success: false, message: 'Not found' });
 
     const hasAccess = invoice.lawyer.toString() === req.user.id ||
                       invoice.client.toString() === req.user.id;
     if (!hasAccess) return res.status(403).json({ success: false, message: 'Not authorized' });
 
-    const filePath = path.join(__dirname, '..', invoice.pdfUrl);
-    res.download(filePath);
+    if (!invoice.pdfData) {
+      return res.status(404).json({ success: false, message: 'PDF not available — invoice was created before the storage fix. Please create a new invoice.' });
+    }
+
+    const fileName = `Invoice_${invoice.invoiceNumber || invoice._id}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Length': invoice.pdfData.length
+    });
+    res.send(invoice.pdfData);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -115,7 +126,7 @@ exports.markAsPaid = async (req, res) => {
       { _id: req.params.id, client: req.user.id, status: { $in: ['pending', 'overdue'] } },
       { status: 'paid', paidAt: new Date() },
       { new: true }
-    );
+    ).select('-pdfData');
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found or already paid' });

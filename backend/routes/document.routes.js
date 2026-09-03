@@ -7,6 +7,7 @@ const { protect, authorize } = require('../middleware/auth');
 router.post('/', protect, authorize('lawyer'), createDocument);
 router.get('/', protect, getDocuments);
 router.get('/:id/pdf', protect, downloadPDF);
+router.get('/:id/download', protect, downloadPDF);  // Alias for new MongoDB-based download
 router.put('/:id/revoke', protect, authorize('lawyer'), revokeDocument);
 
 module.exports = router;

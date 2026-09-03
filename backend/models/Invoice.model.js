@@ -29,7 +29,8 @@ const InvoiceSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  pdfUrl: String,
+  pdfUrl: String,  // Legacy
+  pdfData: Buffer,  // PDF binary stored in MongoDB
   invoiceNumber: {
     type: String,
     unique: true

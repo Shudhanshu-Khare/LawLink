@@ -4,12 +4,21 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
-// Convert relative /uploads/... paths to absolute backend URLs (Vercel doesn't proxy these)
-const getFullUrl = (path) => {
-  if (!path) return '#';
-  if (path.startsWith('http')) return path;
-  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
-  return `${baseUrl}${path}`;
+// Download PDF via authenticated API call (PDFs are stored in MongoDB, not on disk)
+const downloadInvPDF = async (invId, invoiceNumber) => {
+  try {
+    const { data } = await api.get(`/invoices/${invId}/download`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Invoice_${invoiceNumber || invId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to download PDF');
+  }
 };
 
 const InvoiceManager = () => {
@@ -208,8 +217,8 @@ const InvoiceManager = () => {
                   <div className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold">₹{inv.totalAmount}</h5>
                     <div className="d-flex gap-2">
-                      <a href={getFullUrl(inv.pdfUrl)} target="_blank" rel="noreferrer"
-                         className="btn btn-sm btn-outline-primary">PDF</a>
+                      <button className="btn btn-sm btn-outline-primary"
+                        onClick={() => downloadInvPDF(inv._id, inv.invoiceNumber)}>PDF</button>
                       {isClient && inv.status !== 'paid' && (
                         <button className="btn btn-sm btn-success" onClick={() => handlePay(inv._id)}>Pay</button>
                       )}

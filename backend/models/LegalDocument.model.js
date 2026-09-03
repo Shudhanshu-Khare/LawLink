@@ -31,7 +31,8 @@ const LegalDocumentSchema = new mongoose.Schema({
     type: String, // Rich text content of the document
     required: true
   },
-  pdfUrl: String,
+  pdfUrl: String,  // Legacy — kept for backward compatibility
+  pdfData: Buffer,  // PDF binary stored in MongoDB (survives Render restarts)
   status: {
     type: String,
     enum: ['draft', 'issued', 'acknowledged', 'expired', 'revoked'],

@@ -18,12 +18,21 @@ const STATUS_COLORS = {
   expired: 'warning', revoked: 'danger'
 };
 
-// Convert relative /uploads/... paths to absolute backend URLs (Vercel doesn't proxy these)
-const getFullUrl = (path) => {
-  if (!path) return '#';
-  if (path.startsWith('http')) return path;
-  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
-  return `${baseUrl}${path}`;
+// Download PDF via authenticated API call (PDFs are stored in MongoDB, not on disk)
+const downloadDocPDF = async (docId, title) => {
+  try {
+    const { data } = await api.get(`/documents/${docId}/download`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(title || 'document').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed to download PDF');
+  }
 };
 
 const DocumentHub = () => {
@@ -165,8 +174,8 @@ const DocumentHub = () => {
                   </p>
                   <div className="d-flex gap-2">
                     {doc.pdfUrl && (doc.status !== 'revoked' || isLawyer) && (
-                      <a href={getFullUrl(doc.pdfUrl)} target="_blank" rel="noreferrer"
-                         className="btn btn-sm btn-outline-primary">Download PDF</a>
+                      <button className="btn btn-sm btn-outline-primary"
+                        onClick={() => downloadDocPDF(doc._id, doc.title)}>Download PDF</button>
                     )}
                     {doc.status === 'issued' && isLawyer && (
                       <button className="btn btn-sm btn-outline-danger" onClick={() => handleRevoke(doc._id)}>
