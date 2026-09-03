@@ -1,5 +1,5 @@
 // src/src/contexts/SocketContext.jsx
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -13,6 +13,8 @@ export const SocketProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [connected, setConnected] = useState(false);
+  // Use state to track socket instance so consumers re-render when it changes
+  const [socketInstance, setSocketInstance] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated || !socketToken) {
@@ -20,12 +22,13 @@ export const SocketProvider = ({ children }) => {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
+        setSocketInstance(null);
         setConnected(false);
       }
       return;
     }
 
-    // Only create a new socket if we don't have one or the token changed
+    // Disconnect old socket if token changed (login as different user)
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
@@ -50,16 +53,18 @@ export const SocketProvider = ({ children }) => {
     });
 
     socketRef.current = socket;
+    setSocketInstance(socket);  // Trigger re-render so consumers get the socket
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setSocketInstance(null);
     };
   }, [isAuthenticated, socketToken]);
 
   return (
     <SocketContext.Provider value={{
-      socket: socketRef.current,
+      socket: socketInstance,
       onlineUsers,
       connected
     }}>

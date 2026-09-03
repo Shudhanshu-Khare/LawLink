@@ -264,8 +264,7 @@ exports.getBulkAvailability = async (req, res) => {
       bookedByLawyer[lid].push(b.timeSlot);
     });
 
-    // Get all verified lawyers
-    const User = require('../models/User.model');
+    // Calculate available slots for each lawyer (User model already imported at top)
     const lawyers = await User.find({ role: 'lawyer', isVerified: true, isBlocked: { $ne: true } })
       .select('_id');
 
