@@ -45,12 +45,12 @@ const LawyerDirectory = () => {
       <div className="row g-3 mb-4">
         <div className="col-md-4">
           <input type="text" className="form-control" placeholder="Search by name..."
-                 value={filters.search}
-                 onChange={e => setFilters({...filters, search: e.target.value})} />
+            value={filters.search}
+            onChange={e => setFilters({ ...filters, search: e.target.value })} />
         </div>
         <div className="col-md-4">
           <select className="form-select" value={filters.practiceArea}
-                  onChange={e => setFilters({...filters, practiceArea: e.target.value})}>
+            onChange={e => setFilters({ ...filters, practiceArea: e.target.value })}>
             <option value="">All Practice Areas</option>
             {PRACTICE_AREAS.map(area => (
               <option key={area} value={area}>{area.charAt(0).toUpperCase() + area.slice(1)}</option>
@@ -59,8 +59,8 @@ const LawyerDirectory = () => {
         </div>
         <div className="col-md-4">
           <input type="text" className="form-control" placeholder="Filter by city..."
-                 value={filters.city}
-                 onChange={e => setFilters({...filters, city: e.target.value})} />
+            value={filters.city}
+            onChange={e => setFilters({ ...filters, city: e.target.value })} />
         </div>
       </div>
 
@@ -75,14 +75,14 @@ const LawyerDirectory = () => {
             const slotsToday = todaySlots[lawyer._id];
             return (
               <motion.div key={lawyer._id} className="col-md-6 col-lg-4"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}>
                 <div className="card h-100 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
                   <div className="card-body">
                     <div className="d-flex align-items-center mb-3">
                       <div className="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                           style={{ width: 48, height: 48, backgroundColor: '#e2e8f0', fontSize: '18px', fontWeight: 'bold' }}>
+                        style={{ width: 48, height: 48, backgroundColor: '#e2e8f0', fontSize: '18px', fontWeight: 'bold' }}>
                         {lawyer.name?.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -110,7 +110,7 @@ const LawyerDirectory = () => {
                       {slotsToday !== undefined && (
                         <span className={`badge ${slotsToday > 0 ? 'bg-success' : 'bg-secondary'} bg-opacity-10 
                               ${slotsToday > 0 ? 'text-success' : 'text-secondary'}`}
-                              style={{ fontSize: 11 }}>
+                          style={{ fontSize: 11 }}>
                           {slotsToday > 0 ? `${slotsToday} slot${slotsToday !== 1 ? 's' : ''} available today` : 'No slots today'}
                         </span>
                       )}

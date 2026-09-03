@@ -1,6 +1,6 @@
 // src/src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { startKeepalive, stopKeepalive } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
         // Cookie is sent automatically — if valid, we get user data
         const { data } = await api.get('/auth/me');
         setUser(data.user);
+        startKeepalive(); // User is authenticated — keep server alive
       } catch (err) {
         // Only clear session if backend explicitly rejects auth (401)
         // Network errors (Render cold start, timeout, 502) should NOT log user out
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('loggedOut');  // Clear the logout flag
     setSocketToken(tokenValue);
     setUser(userData);
+    startKeepalive(); // Start pinging server while user is logged in
   };
 
   const logout = async () => {
@@ -55,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('socketToken');
     setSocketToken(null);
     setUser(null);
+    stopKeepalive(); // Stop pinging — server can sleep if nobody else is logged in
 
     // Then clear server-side cookie (best-effort, non-blocking)
     try {

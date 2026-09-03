@@ -61,14 +61,25 @@ api.interceptors.response.use(
   }
 );
 
-// Keep Render alive: ping /api/health every 4 minutes while ANY tab has the site open
-// Render free tier spins down after 15 min of no EXTERNAL requests — this prevents that
-// No visibility check — keeps server alive even if tab is in background
-setInterval(() => {
-  api.get('/health').catch(() => {});
-}, 4 * 60 * 1000);
+// Keepalive ping — only runs when a user is logged in
+// Server sleeps when nobody is actively using the app
+let keepaliveInterval = null;
 
-// Also ping immediately on page load to wake server if it's sleeping
-api.get('/health').catch(() => {});
+export const startKeepalive = () => {
+  if (keepaliveInterval) return; // already running
+  // Ping immediately to wake server if sleeping
+  api.get('/health').catch(() => {});
+  // Then ping every 4 minutes
+  keepaliveInterval = setInterval(() => {
+    api.get('/health').catch(() => {});
+  }, 4 * 60 * 1000);
+};
+
+export const stopKeepalive = () => {
+  if (keepaliveInterval) {
+    clearInterval(keepaliveInterval);
+    keepaliveInterval = null;
+  }
+};
 
 export default api;
