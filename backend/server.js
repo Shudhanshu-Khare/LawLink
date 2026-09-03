@@ -24,6 +24,16 @@ process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION:', err.message || err);
 });
 
+// Log when Render terminates the process (helps diagnose shutdowns)
+process.on('SIGTERM', () => {
+  console.log('>>> SIGTERM received — Render is shutting down this instance');
+  process.exit(0);
+});
+process.on('SIGINT', () => {
+  console.log('>>> SIGINT received — process interrupted');
+  process.exit(0);
+});
+
 const app = express();
 const server = http.createServer(app);
 
@@ -47,8 +57,8 @@ app.set('socketState', socketState);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Trust Render's reverse proxy so rate limiter sees real client IPs, not the load balancer
-app.set('trust proxy', 1);
+// Trust ALL proxies in the chain (Render may have multiple proxy layers)
+app.set('trust proxy', true);
 
 // ── CORS must run BEFORE rate limiter so 429 responses include CORS headers ──
 app.use(cors({
@@ -61,9 +71,9 @@ app.use(require('helmet')());                     // Set secure HTTP headers
 app.use(require('express-mongo-sanitize')());      // Prevent NoSQL injection
 app.use(require('express-rate-limit')({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: isProduction ? 300 : 500,  // 300 in prod (SPAs fire many API calls per page)
+  max: isProduction ? 1000 : 2000,  // High limit — Render proxy makes all users share one IP
   message: { success: false, message: 'Too many requests, please try again later' },
-  skip: (req) => req.path.startsWith('/socket.io')  // Don't rate-limit socket.io
+  skip: (req) => req.path.startsWith('/socket.io') || req.path === '/api/health'
 }));
 
 // ── Core Middleware ──

@@ -30,8 +30,8 @@ const Navbar = () => {
     if (!isAuthenticated) return;
     fetchUnread();
 
-    // Poll faster on chat page (user is reading msgs), slower elsewhere
-    const interval = setInterval(fetchUnread, location.pathname === '/chat' ? 5000 : 30000);
+    // Poll every 30s on chat page, 60s elsewhere (was 5s/30s — too aggressive for Render)
+    const interval = setInterval(fetchUnread, location.pathname === '/chat' ? 30000 : 60000);
     return () => clearInterval(interval);
   }, [isAuthenticated, location.pathname]);
 
