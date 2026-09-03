@@ -28,7 +28,7 @@ const Login = () => {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (err) {
-      const msg = err.response?.data?.message || (err.code === 'ECONNABORTED' || !err.response ? 'Server is starting up, please try again in a moment' : 'Login failed');
+      const msg = err.response?.data?.message || (err.response?.status === 429 ? 'Too many requests. Please wait a minute and try again.' : err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server. It may be waking up — please wait 30 seconds and try again.' : 'Login failed');
       setError(msg);
     } finally {
       setLoading(false);
@@ -53,7 +53,7 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || (err.code === 'ECONNABORTED' || !err.response ? 'Server is starting up, please try again in a moment' : 'Google sign-in failed');
+      const msg = err.response?.data?.message || (err.response?.status === 429 ? 'Too many requests. Please wait a minute and try again.' : err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server. It may be waking up — please wait 30 seconds and try again.' : 'Google sign-in failed');
       setError(msg);
     } finally {
       setLoading(false);

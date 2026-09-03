@@ -9,7 +9,7 @@ const api = axios.create({
     'Content-Type': 'application/json'
   },
   withCredentials: true,  // Send httpOnly cookies with every request
-  timeout: 30000          // 30s timeout (Render cold start can take 20s)
+  timeout: 60000          // 60s timeout (Render cold start can take up to 60s)
 });
 
 // Attach Bearer token as fallback for cross-domain (cookies may be blocked)
@@ -21,20 +21,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-retry on network errors / timeouts (handles Render cold starts)
+// Auto-retry with exponential backoff (handles Render cold starts + momentary failures)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
+    if (!config) return Promise.reject(error);
 
-    // Retry once on network error or timeout (cold start recovery)
-    if (
-      !config._retried &&
-      (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)
-    ) {
-      config._retried = true;
-      // Wait 2 seconds before retry (let server finish waking up)
-      await new Promise(r => setTimeout(r, 2000));
+    // Track retry count (up to 3 retries with increasing delays: 3s, 6s, 12s)
+    config._retryCount = config._retryCount || 0;
+    const MAX_RETRIES = 3;
+
+    const isRetryable =
+      error.code === 'ECONNABORTED' ||      // timeout
+      !error.response ||                      // no response (network error / CORS block)
+      error.response.status >= 500;           // server error
+
+    if (isRetryable && config._retryCount < MAX_RETRIES) {
+      config._retryCount += 1;
+      const delay = config._retryCount * 3000; // 3s, 6s, 9s
+      await new Promise(r => setTimeout(r, delay));
       return api(config);
     }
 
@@ -46,6 +52,7 @@ api.interceptors.response.use(
         .some(path => window.location.pathname.startsWith(path));
 
       if (!isAuthCheck && !isOnAuthPage) {
+        localStorage.setItem('loggedOut', 'true');
         localStorage.removeItem('socketToken');
         window.location.href = '/login';
       }
@@ -53,5 +60,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Keep Render alive: ping /api/health every 4 minutes while the page is open
+// Render free tier spins down after 15 min of no requests — this prevents that
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    api.get('/health').catch(() => {});
+  }
+}, 4 * 60 * 1000);
 
 export default api;

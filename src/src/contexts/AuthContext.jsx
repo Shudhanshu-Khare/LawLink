@@ -12,6 +12,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const loadUser = async () => {
+      // If user explicitly logged out, don't even try /auth/me
+      // (the httpOnly cookie might still exist because it can't be cleared from JS)
+      if (localStorage.getItem('loggedOut') === 'true') {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         // Cookie is sent automatically — if valid, we get user data
         const { data } = await api.get('/auth/me');
@@ -35,25 +43,24 @@ export const AuthProvider = ({ children }) => {
     // JWT is already set as httpOnly cookie by the server
     // We only store the token for socket.io auth (can't send cookies over WebSocket)
     localStorage.setItem('socketToken', tokenValue);
+    localStorage.removeItem('loggedOut');  // Clear the logout flag
     setSocketToken(tokenValue);
     setUser(userData);
   };
 
   const logout = async () => {
-    // Clear local state FIRST (synchronous — prevents race conditions)
+    // Mark as explicitly logged out BEFORE anything else
+    // This prevents /auth/me from restoring the session even if the cookie persists
+    localStorage.setItem('loggedOut', 'true');
     localStorage.removeItem('socketToken');
     setSocketToken(null);
     setUser(null);
-
-    // Clear the httpOnly cookie from the browser side as backup
-    // (in case the API call below fails due to Render being down)
-    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
 
     // Then clear server-side cookie (best-effort, non-blocking)
     try {
       await api.post('/auth/logout');
     } catch (err) {
-      // Ignore — local state and cookie already cleared
+      // Ignore — the loggedOut flag ensures we won't auto-login on refresh
     }
   };
 
