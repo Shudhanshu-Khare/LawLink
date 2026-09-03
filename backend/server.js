@@ -73,7 +73,8 @@ app.use(require('express-rate-limit')({
   windowMs: 15 * 60 * 1000,  // 15 minutes
   max: isProduction ? 1000 : 2000,  // High limit — Render proxy makes all users share one IP
   message: { success: false, message: 'Too many requests, please try again later' },
-  skip: (req) => req.path.startsWith('/socket.io') || req.path === '/api/health'
+  skip: (req) => req.path.startsWith('/socket.io') || req.path === '/api/health',
+  validate: false  // Suppress express-rate-limit v7 trust proxy validation error on Render
 }));
 
 // ── Core Middleware ──

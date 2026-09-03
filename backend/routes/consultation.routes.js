@@ -10,8 +10,9 @@ const { protect, authorize } = require('../middleware/auth');
 router.post('/', protect, authorize('client'), bookConsultation);
 router.get('/', protect, getConsultations);
 router.get('/upcoming', protect, getUpcoming);
-router.get('/availability/:lawyerId', getAvailability);  // Public
+// bulk-availability MUST be before :lawyerId to avoid param capture
 router.get('/bulk-availability', getBulkAvailability);    // Public — replaces N+1 calls
+router.get('/availability/:lawyerId', getAvailability);   // Public
 router.put('/:id', protect, updateConsultation);
 
 module.exports = router;
