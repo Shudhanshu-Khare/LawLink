@@ -128,8 +128,22 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('MongoDB connected successfully');
+
+    // One-time cleanup: remove old documents & invoices that lost their PDFs
+    // (they were stored on Render's ephemeral filesystem, now gone)
+    try {
+      const LegalDocument = require('./models/LegalDocument.model');
+      const Invoice = require('./models/Invoice.model');
+      const delDocs = await LegalDocument.deleteMany({ pdfData: { $exists: false } });
+      const delInv = await Invoice.deleteMany({ pdfData: { $exists: false } });
+      if (delDocs.deletedCount || delInv.deletedCount) {
+        console.log(`Cleanup: removed ${delDocs.deletedCount} old docs, ${delInv.deletedCount} old invoices (no PDF data)`);
+      }
+    } catch (cleanupErr) {
+      console.error('Cleanup error (non-fatal):', cleanupErr.message);
+    }
 
     // Initialize cron services
     const { initReminderService } = require('./services/reminderService');
