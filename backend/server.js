@@ -15,6 +15,15 @@ dns.setServers(['8.8.8.8', '8.8.4.4']);
 // Load env vars
 dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
+// Prevent server from crashing on unhandled errors
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.message);
+  console.error(err.stack);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err.message || err);
+});
+
 const app = express();
 const server = http.createServer(app);
 
@@ -117,12 +126,34 @@ mongoose.connect(process.env.MONGO_URI)
 
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+
+      // Self-ping keepalive: prevent Render from thinking we're idle
+      // Pings our own health endpoint every 4 minutes
+      if (isProduction) {
+        setInterval(() => {
+          const url = `http://localhost:${PORT}/api/health`;
+          http.get(url, () => {}).on('error', () => {});
+        }, 4 * 60 * 1000);
+        console.log('Keepalive ping enabled (every 4 minutes)');
+      }
     });
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err.message);
     process.exit(1);
   });
+
+// Auto-reconnect MongoDB if connection drops
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected. Attempting reconnect...');
+  setTimeout(() => {
+    mongoose.connect(process.env.MONGO_URI).catch(() => {});
+  }, 5000);
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err.message);
+});
 
 // Export server for Socket.io setup later
 module.exports = { app, server };
