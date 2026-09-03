@@ -18,6 +18,14 @@ const STATUS_COLORS = {
   expired: 'warning', revoked: 'danger'
 };
 
+// Convert relative /uploads/... paths to absolute backend URLs (Vercel doesn't proxy these)
+const getFullUrl = (path) => {
+  if (!path) return '#';
+  if (path.startsWith('http')) return path;
+  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
+  return `${baseUrl}${path}`;
+};
+
 const DocumentHub = () => {
   const { isLawyer } = useAuth();
   const [documents, setDocuments] = useState([]);
@@ -157,7 +165,7 @@ const DocumentHub = () => {
                   </p>
                   <div className="d-flex gap-2">
                     {doc.pdfUrl && (doc.status !== 'revoked' || isLawyer) && (
-                      <a href={doc.pdfUrl} target="_blank" rel="noreferrer"
+                      <a href={getFullUrl(doc.pdfUrl)} target="_blank" rel="noreferrer"
                          className="btn btn-sm btn-outline-primary">Download PDF</a>
                     )}
                     {doc.status === 'issued' && isLawyer && (

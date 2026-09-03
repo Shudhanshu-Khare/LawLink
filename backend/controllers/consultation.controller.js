@@ -2,12 +2,24 @@
 const Consultation = require('../models/Consultation.model');
 const User = require('../models/User.model');
 
-// Helper to get YYYY-MM-DD in local timezone (avoids UTC mismatch with IST)
-const getLocalDateStr = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+// Helper to get YYYY-MM-DD in IST regardless of server timezone (Render runs in UTC)
+const getISTDateStr = (date) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(date);
+  return parts; // returns YYYY-MM-DD
+};
+
+// Helper to get current hour in IST (0-23)
+const getISTHour = () => {
+  return parseInt(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric', hour12: false
+    }).format(new Date()),
+    10
+  );
 };
 
 // Available 60-min time slots (9 AM to 6 PM)
@@ -172,14 +184,14 @@ exports.getAvailability = async (req, res) => {
 
     const availability = {};
     const now = new Date();
-    const todayStr = getLocalDateStr(now);
-    const currentHour = now.getHours();
+    const todayStr = getISTDateStr(now);
+    const currentHour = getISTHour();
 
     const current = new Date(start);
     while (current <= end) {
-      const dateStr = getLocalDateStr(current);
+      const dateStr = getISTDateStr(current);
       const bookedSlots = booked
-        .filter(b => getLocalDateStr(b.date) === dateStr)
+        .filter(b => getISTDateStr(b.date) === dateStr)
         .map(b => b.timeSlot);
 
       const unbookedSlots = ALL_SLOTS.filter(s => !bookedSlots.includes(s));

@@ -17,10 +17,14 @@ export const AuthProvider = ({ children }) => {
         const { data } = await api.get('/auth/me');
         setUser(data.user);
       } catch (err) {
-        // No valid cookie or expired — user is not authenticated
-        setUser(null);
-        setSocketToken(null);
-        localStorage.removeItem('socketToken');
+        // Only clear session if backend explicitly rejects auth (401)
+        // Network errors (Render cold start, timeout, 502) should NOT log user out
+        if (err.response && err.response.status === 401) {
+          setUser(null);
+          setSocketToken(null);
+          localStorage.removeItem('socketToken');
+        }
+        // For non-401 errors: keep existing user state (may be null on first load)
       }
       setLoading(false);
     };
@@ -41,11 +45,15 @@ export const AuthProvider = ({ children }) => {
     setSocketToken(null);
     setUser(null);
 
+    // Clear the httpOnly cookie from the browser side as backup
+    // (in case the API call below fails due to Render being down)
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+
     // Then clear server-side cookie (best-effort, non-blocking)
     try {
       await api.post('/auth/logout');
     } catch (err) {
-      // Ignore — local state already cleared
+      // Ignore — local state and cookie already cleared
     }
   };
 

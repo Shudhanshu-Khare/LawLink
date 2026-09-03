@@ -4,6 +4,14 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
+// Convert relative /uploads/... paths to absolute backend URLs (Vercel doesn't proxy these)
+const getFullUrl = (path) => {
+  if (!path) return '#';
+  if (path.startsWith('http')) return path;
+  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : '';
+  return `${baseUrl}${path}`;
+};
+
 const InvoiceManager = () => {
   const { user, isLawyer, isClient } = useAuth();
   const [invoices, setInvoices] = useState([]);
@@ -200,7 +208,7 @@ const InvoiceManager = () => {
                   <div className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold">₹{inv.totalAmount}</h5>
                     <div className="d-flex gap-2">
-                      <a href={inv.pdfUrl} target="_blank" rel="noreferrer"
+                      <a href={getFullUrl(inv.pdfUrl)} target="_blank" rel="noreferrer"
                          className="btn btn-sm btn-outline-primary">PDF</a>
                       {isClient && inv.status !== 'paid' && (
                         <button className="btn btn-sm btn-success" onClick={() => handlePay(inv._id)}>Pay</button>

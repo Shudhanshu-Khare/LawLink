@@ -38,21 +38,26 @@ app.set('socketState', socketState);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Trust Render's reverse proxy so rate limiter sees real client IPs, not the load balancer
+app.set('trust proxy', 1);
+
+// ── CORS must run BEFORE rate limiter so 429 responses include CORS headers ──
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true
+}));
+
 // ── Security Middleware ──
 app.use(require('helmet')());                     // Set secure HTTP headers
 app.use(require('express-mongo-sanitize')());      // Prevent NoSQL injection
 app.use(require('express-rate-limit')({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: isProduction ? 100 : 500,  // Stricter in production
+  max: isProduction ? 300 : 500,  // 300 in prod (SPAs fire many API calls per page)
   message: { success: false, message: 'Too many requests, please try again later' },
   skip: (req) => req.path.startsWith('/socket.io')  // Don't rate-limit socket.io
 }));
 
 // ── Core Middleware ──
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}));
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
