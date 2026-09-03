@@ -20,27 +20,14 @@ const LawyerDirectory = () => {
       if (filters.city) params.city = filters.city;
       if (filters.search) params.search = filters.search;
 
-      const { data } = await api.get('/users/lawyers', { params });
-      setLawyers(data.lawyers);
+      // Fetch lawyers and bulk availability in parallel (2 requests instead of N+1)
+      const [lawyersRes, availRes] = await Promise.all([
+        api.get('/users/lawyers', { params }),
+        api.get('/consultations/bulk-availability')
+      ]);
 
-      // Fetch today's availability for each lawyer (use local date, not UTC)
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-      const slotCounts = {};
-      await Promise.all(
-        data.lawyers.map(async (lawyer) => {
-          try {
-            const { data: availData } = await api.get(`/consultations/availability/${lawyer._id}`, {
-              params: { startDate: today, endDate: today }
-            });
-            slotCounts[lawyer._id] = availData.availability[today]?.available?.length || 0;
-          } catch (err) {
-            console.warn(`Failed to fetch availability for lawyer ${lawyer._id}:`, err);
-            slotCounts[lawyer._id] = 0;
-          }
-        })
-      );
-      setTodaySlots(slotCounts);
+      setLawyers(lawyersRes.data.lawyers);
+      setTodaySlots(availRes.data.availability || {});
     } catch (err) {
       console.error('Failed to fetch lawyers:', err);
     } finally {

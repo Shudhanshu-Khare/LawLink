@@ -236,3 +236,52 @@ exports.getUpcoming = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// @desc    Get today's available slot counts for ALL lawyers in ONE query
+// @route   GET /api/consultations/bulk-availability
+// Replaces the N+1 pattern where frontend called /availability/:id for each lawyer
+exports.getBulkAvailability = async (req, res) => {
+  try {
+    const today = new Date();
+    const todayStr = getISTDateStr(today);
+    const currentHour = getISTHour();
+
+    // Parse today's date for MongoDB query
+    const startOfDay = new Date(todayStr + 'T00:00:00.000Z');
+    const endOfDay = new Date(todayStr + 'T23:59:59.999Z');
+
+    // ONE query: get all booked slots for today across all lawyers
+    const allBooked = await Consultation.find({
+      date: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ['pending', 'confirmed'] }
+    }).select('lawyer timeSlot');
+
+    // Group booked slots by lawyer
+    const bookedByLawyer = {};
+    allBooked.forEach(b => {
+      const lid = b.lawyer.toString();
+      if (!bookedByLawyer[lid]) bookedByLawyer[lid] = [];
+      bookedByLawyer[lid].push(b.timeSlot);
+    });
+
+    // Get all verified lawyers
+    const User = require('../models/User.model');
+    const lawyers = await User.find({ role: 'lawyer', isVerified: true, isBlocked: { $ne: true } })
+      .select('_id');
+
+    // Calculate available slots for each lawyer
+    const availability = {};
+    lawyers.forEach(lawyer => {
+      const lid = lawyer._id.toString();
+      const booked = bookedByLawyer[lid] || [];
+      const unbooked = ALL_SLOTS.filter(s => !booked.includes(s));
+      // Filter out past slots for today
+      const future = unbooked.filter(slot => parseInt(slot.split(':')[0]) > currentHour);
+      availability[lid] = future.length;
+    });
+
+    res.json({ success: true, availability });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

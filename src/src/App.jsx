@@ -1,6 +1,6 @@
-// src/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import Navbar from './components/Navbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -161,10 +161,19 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Navbar />
-        <AppRoutes />
+        <SocketProviderWrapper />
       </AuthProvider>
     </Router>
+  );
+}
+
+// Separate component so SocketProvider can access AuthContext
+function SocketProviderWrapper() {
+  return (
+    <SocketProvider>
+      <Navbar />
+      <AppRoutes />
+    </SocketProvider>
   );
 }
 
