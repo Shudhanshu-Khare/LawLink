@@ -1,7 +1,8 @@
 const User = require('../models/User.model');
 const OTP = require('../models/OTP.model');
 const { OAuth2Client } = require('google-auth-library');
-const nodemailer = require('nodemailer');
+// nodemailer removed — Gmail SMTP is blocked on Render free tier (port 465/587 blocked)
+// Using Brevo HTTP API instead (works over HTTPS port 443)
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -11,10 +12,10 @@ const ADMIN_EMAIL = 'khareshudhanshu247@gmail.com';
 // Cookie options for JWT
 const isProduction = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
-  httpOnly: true,         // JS cannot access this cookie
-  secure: isProduction,   // HTTPS only in production
-  sameSite: isProduction ? 'none' : 'lax',  // 'none' needed for cross-domain (Vercel→Render)
-  maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days (matches JWT_EXPIRE)
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/'
 };
 
@@ -32,37 +33,44 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
 // OTP generator (no in-memory store — uses MongoDB with TTL)
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Send OTP via Brevo HTTP API (free 300 emails/day, works on Render)
 async function sendOTPEmail(email, otp) {
-  // If email creds aren't configured, fail explicitly (don't silently log)
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error('[OTP] EMAIL_USER or EMAIL_PASS not set — cannot send OTP email');
-    console.log(`[OTP] ${email} → ${otp} (logged, not sent)`);
-    throw new Error('Email service not configured. Please contact the administrator.');
+  if (!process.env.BREVO_API_KEY) {
+    console.warn('[OTP] BREVO_API_KEY not set — logging OTP to console only');
+    console.log(`[OTP] ${email} → ${otp}`);
+    return true;
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      connectionTimeout: 10000,  // 10s connection timeout
-      greetingTimeout: 10000,
-      socketTimeout: 10000
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'LawLink', email: process.env.EMAIL_USER || 'noreply@lawlink.app' },
+        to: [{ email }],
+        subject: 'LawLink — Email Verification OTP',
+        htmlContent: `
+          <div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px">
+            <h2 style="color:#0f172a">LawLink Verification</h2>
+            <p>Your OTP code is:</p>
+            <h1 style="letter-spacing:8px;color:#2563eb;text-align:center">${otp}</h1>
+            <p style="color:#64748b;font-size:13px">This code expires in 5 minutes. Do not share it.</p>
+          </div>
+        `
+      })
     });
 
-    await transporter.sendMail({
-      from: `"LawLink" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'LawLink — Email Verification OTP',
-      html: `
-        <div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px">
-          <h2 style="color:#0f172a">LawLink Verification</h2>
-          <p>Your OTP code is:</p>
-          <h1 style="letter-spacing:8px;color:#2563eb;text-align:center">${otp}</h1>
-          <p style="color:#64748b;font-size:13px">This code expires in 5 minutes. Do not share it.</p>
-        </div>
-      `
-    });
-    console.log(`[OTP] Sent to ${email} successfully`);
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error(`[OTP] Brevo API error (${response.status}):`, errBody);
+      throw new Error('Email service error');
+    }
+
+    console.log(`[OTP] Sent to ${email} via Brevo`);
     return true;
   } catch (mailErr) {
     console.error(`[OTP] Failed to send to ${email}:`, mailErr.message);
