@@ -165,8 +165,8 @@ const Register = () => {
 
   const isLawyer = formData.role === 'lawyer';
 
-  // ── Lawyer fields component ──
-  const LawyerFields = () => (
+  // ── Lawyer fields (inline JSX, NOT a component — prevents focus loss on keystroke) ──
+  const lawyerFields = (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
       <div className="p-3 mb-3 rounded" style={{ background: '#f1f5f9' }}>
@@ -283,7 +283,7 @@ const Register = () => {
                   </select>
                 </div>
 
-                <AnimatePresence>{isLawyer && <LawyerFields />}</AnimatePresence>
+                <AnimatePresence>{isLawyer && lawyerFields}</AnimatePresence>
 
                 <button type="submit" className="btn btn-primary w-100" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Create Account'}
@@ -336,7 +336,7 @@ const Register = () => {
                   </select>
                 </div>
 
-                <AnimatePresence>{isLawyer && <LawyerFields />}</AnimatePresence>
+                <AnimatePresence>{isLawyer && lawyerFields}</AnimatePresence>
 
                 <div className="row mb-3">
                   <div className="col">

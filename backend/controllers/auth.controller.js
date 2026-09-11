@@ -33,31 +33,41 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 async function sendOTPEmail(email, otp) {
-  // if email creds aren't set, just log (useful during dev)
+  // If email creds aren't configured, fail explicitly (don't silently log)
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[OTP] ${email} → ${otp}`);
-    return true;
+    console.error('[OTP] EMAIL_USER or EMAIL_PASS not set — cannot send OTP email');
+    console.log(`[OTP] ${email} → ${otp} (logged, not sent)`);
+    throw new Error('Email service not configured. Please contact the administrator.');
   }
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      connectionTimeout: 10000,  // 10s connection timeout
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    });
 
-  await transporter.sendMail({
-    from: `"LawLink" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'LawLink — Email Verification OTP',
-    html: `
-      <div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px">
-        <h2 style="color:#0f172a">LawLink Verification</h2>
-        <p>Your OTP code is:</p>
-        <h1 style="letter-spacing:8px;color:#2563eb;text-align:center">${otp}</h1>
-        <p style="color:#64748b;font-size:13px">This code expires in 5 minutes. Do not share it.</p>
-      </div>
-    `
-  });
-  return true;
+    await transporter.sendMail({
+      from: `"LawLink" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'LawLink — Email Verification OTP',
+      html: `
+        <div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px">
+          <h2 style="color:#0f172a">LawLink Verification</h2>
+          <p>Your OTP code is:</p>
+          <h1 style="letter-spacing:8px;color:#2563eb;text-align:center">${otp}</h1>
+          <p style="color:#64748b;font-size:13px">This code expires in 5 minutes. Do not share it.</p>
+        </div>
+      `
+    });
+    console.log(`[OTP] Sent to ${email} successfully`);
+    return true;
+  } catch (mailErr) {
+    console.error(`[OTP] Failed to send to ${email}:`, mailErr.message);
+    throw new Error('Failed to send OTP email. Please try again or use Google sign-up.');
+  }
 }
 
 
