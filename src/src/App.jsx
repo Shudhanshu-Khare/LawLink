@@ -17,8 +17,7 @@ import InvoiceManager from './pages/InvoiceManager';
 import DeadlineCalendar from './pages/DeadlineCalendar';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, roles }) => {
@@ -136,8 +135,6 @@ function AppRoutes() {
       <Route path="/login" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Login />} />
       <Route path="/register" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Register />} />
 
-      <Route path="/forgot-password" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       <Route path="/lawyers" element={<LawyerDirectory />} />
 

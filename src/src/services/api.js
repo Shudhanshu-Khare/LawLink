@@ -48,7 +48,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       const url = config?.url || '';
       const isAuthCheck = url.includes('/auth/me');
-      const isOnAuthPage = ['/login', '/register', '/forgot-password', '/reset-password']
+      const isOnAuthPage = ['/login', '/register']
         .some(path => window.location.pathname.startsWith(path));
 
       if (!isAuthCheck && !isOnAuthPage) {
