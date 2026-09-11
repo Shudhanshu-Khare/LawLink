@@ -14,31 +14,10 @@ const validate = (req, res, next) => {
   next();
 };
 
-// Registration validation
-const registerRules = [
-  body('name').trim().notEmpty().withMessage('Name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Name must be 2-100 characters'),
-  body('email').trim().isEmail().withMessage('Valid email is required')
-    .normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
-    .matches(/[a-zA-Z]/).withMessage('Password must contain at least one letter')
-    .matches(/\d/).withMessage('Password must contain at least one number'),
-  body('role').optional().isIn(['client', 'lawyer']).withMessage('Role must be client or lawyer'),
-  validate
-];
-
-// Login validation
+// Login validation (test accounts: Rahul & Priya)
 const loginRules = [
   body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required'),
-  validate
-];
-
-// OTP verification validation
-const verifyOTPRules = [
-  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
-  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits')
-    .isNumeric().withMessage('OTP must contain only numbers'),
   validate
 ];
 
@@ -66,27 +45,9 @@ const updateProfileRules = [
   validate
 ];
 
-// Forgot password validation
-const forgotPasswordRules = [
-  body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
-  validate
-];
-
-// Reset password validation
-const resetPasswordRules = [
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
-    .matches(/[a-zA-Z]/).withMessage('Password must contain at least one letter')
-    .matches(/\d/).withMessage('Password must contain at least one number'),
-  validate
-];
-
 module.exports = {
-  registerRules,
   loginRules,
-  verifyOTPRules,
   googleAuthRules,
   googleRegisterRules,
-  updateProfileRules,
-  forgotPasswordRules,
-  resetPasswordRules
+  updateProfileRules
 };
