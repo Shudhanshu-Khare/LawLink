@@ -8,17 +8,37 @@ import { motion } from 'framer-motion';
 import api from '../services/api';
 
 const Login = () => {
+  const [showTestLogin, setShowTestLogin] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Google login
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/google', {
+        credential: credentialResponse.credential
+      });
+
+      if (data.newUser) {
+        navigate('/register', { state: { googleData: data.googleData } });
+      } else {
+        login(data.token, data.user);
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || (err.response?.status === 429 ? 'Too many requests. Please wait a minute and try again.' : err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server. It may be waking up — please wait 30 seconds and try again.' : 'Google sign-in failed');
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Email + password login
+  // Email+password login (test accounts only)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -35,31 +55,6 @@ const Login = () => {
     }
   };
 
-  // Google login
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setError('');
-    setLoading(true);
-    try {
-      const { data } = await api.post('/auth/google', {
-        credential: credentialResponse.credential
-      });
-
-      if (data.newUser) {
-        // New user — redirect to register with Google data
-        navigate('/register', { state: { googleData: data.googleData } });
-      } else {
-        // Existing Google user — log in
-        login(data.token, data.user);
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      const msg = err.response?.data?.message || (err.response?.status === 429 ? 'Too many requests. Please wait a minute and try again.' : err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server. It may be waking up — please wait 30 seconds and try again.' : 'Google sign-in failed');
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center"
          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
@@ -70,39 +65,13 @@ const Login = () => {
         style={{ width: '420px', borderRadius: '16px' }}
       >
         <div className="card-body p-4">
-          <h2 className="text-center mb-1 fw-bold">Welcome Back</h2>
-          <p className="text-center text-muted mb-4">Sign in to LawLink</p>
+          <h2 className="text-center mb-1 fw-bold">Welcome to LawLink</h2>
+          <p className="text-center text-muted mb-4">Sign in with your Google account</p>
 
           {error && <div className="alert alert-danger py-2">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label">Email</label>
-              <input type="email" name="email" className="form-control"
-                     value={formData.email} onChange={handleChange} required />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Password</label>
-              <input type="password" name="password" className="form-control"
-                     value={formData.password} onChange={handleChange} required />
-              <div className="text-end mt-1">
-                <Link to="/forgot-password" className="text-decoration-none small">Forgot Password?</Link>
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="d-flex align-items-center my-3">
-            <hr className="flex-grow-1" />
-            <span className="px-3 text-muted small">OR</span>
-            <hr className="flex-grow-1" />
-          </div>
-
-          {/* Google Sign In */}
-          <div className="d-flex justify-content-center">
+          {/* Google Sign In — Primary */}
+          <div className="d-flex justify-content-center mb-3">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => setError('Google sign-in failed')}
@@ -112,9 +81,39 @@ const Login = () => {
             />
           </div>
 
-          <p className="text-center mt-3 mb-0">
+          <p className="text-center mt-3 mb-2">
             Don't have an account? <Link to="/register">Register</Link>
           </p>
+
+          {/* Collapsible test account login */}
+          <div className="text-center">
+            <button className="btn btn-link btn-sm text-muted p-0"
+                    style={{ fontSize: '12px', textDecoration: 'none' }}
+                    onClick={() => setShowTestLogin(!showTestLogin)}>
+              {showTestLogin ? '▲ Hide' : '▼ Test account login'}
+            </button>
+          </div>
+
+          {showTestLogin && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-2 p-3 rounded" style={{ background: '#f8fafc' }}>
+              <form onSubmit={handleSubmit}>
+                <div className="mb-2">
+                  <input type="email" name="email" className="form-control form-control-sm"
+                         placeholder="Email" value={formData.email}
+                         onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                </div>
+                <div className="mb-2">
+                  <input type="password" name="password" className="form-control form-control-sm"
+                         placeholder="Password" value={formData.password}
+                         onChange={e => setFormData({ ...formData, password: e.target.value })} required />
+                </div>
+                <button type="submit" className="btn btn-sm btn-outline-secondary w-100" disabled={loading}>
+                  {loading ? 'Signing in...' : 'Sign In (Test)'}
+                </button>
+              </form>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>
