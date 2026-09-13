@@ -70,14 +70,12 @@ exports.login = async (req, res) => {
 
 /**
  * POST /api/auth/google
- * Handles both login and signup initiation via Google OAuth.
- * If user exists with google auth → logs them in.
- * If user exists with password auth → rejects (strict separation).
- * If new user → returns googleData for profile completion.
+ * Accepts { credential, mode } where mode is 'login' or 'register'.
+ * Login: only allows existing users. Register: only allows new users.
  */
 exports.googleAuth = async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, mode } = req.body;
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
@@ -92,6 +90,14 @@ exports.googleAuth = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: 'This account uses password sign-in. Please use email & password.'
+        });
+      }
+
+      // Register mode — user already exists, reject
+      if (mode === 'register') {
+        return res.status(400).json({
+          success: false,
+          message: 'This Gmail is already registered. Please sign in instead.'
         });
       }
 
@@ -122,7 +128,15 @@ exports.googleAuth = async (req, res) => {
       return sendTokenResponse(res, adminUser);
     }
 
-    // new user — frontend will show the role-selection form
+    // Login mode — user doesn't exist, reject
+    if (mode === 'login') {
+      return res.status(400).json({
+        success: false,
+        message: 'This Gmail is not registered. Please sign up first.'
+      });
+    }
+
+    // new user (register mode) — frontend will show the role-selection form
     res.json({
       success: true,
       newUser: true,

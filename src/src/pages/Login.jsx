@@ -21,15 +21,13 @@ const Login = () => {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/google', {
-        credential: credentialResponse.credential
+        credential: credentialResponse.credential,
+        mode: 'login'
       });
 
-      if (data.newUser) {
-        navigate('/register', { state: { googleData: data.googleData } });
-      } else {
-        login(data.token, data.user);
-        navigate('/dashboard');
-      }
+      // Login mode: backend only returns token for existing users
+      login(data.token, data.user);
+      navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || (err.response?.status === 429 ? 'Too many requests. Please wait a minute and try again.' : err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server. It may be waking up — please wait 30 seconds and try again.' : 'Google sign-in failed');
       setError(msg);

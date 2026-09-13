@@ -42,15 +42,13 @@ const Register = () => {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/google', {
-        credential: credentialResponse.credential
+        credential: credentialResponse.credential,
+        mode: 'register'
       });
-      if (data.newUser) {
-        setGoogleData(data.googleData);
-        setStep('profile');
-      } else {
-        login(data.token, data.user);
-        navigate('/dashboard');
-      }
+
+      // Register mode: backend only returns newUser for unregistered users
+      setGoogleData(data.googleData);
+      setStep('profile');
     } catch (err) {
       setError(err.response?.data?.message || 'Google sign-up failed');
     } finally {
