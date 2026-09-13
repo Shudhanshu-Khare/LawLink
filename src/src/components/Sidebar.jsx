@@ -1,5 +1,5 @@
 // src/src/components/Sidebar.jsx
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import api from '../services/api';
@@ -7,6 +7,7 @@ import api from '../services/api';
 const Sidebar = () => {
   const { user, logout: authLogout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -37,16 +38,16 @@ const Sidebar = () => {
     { to: '/chat', icon: 'bi-chat-square', label: 'Messages' },
   ];
 
+  // Admin uses simple /admin route — tabs are handled within AdminDashboard
   const adminNav = [
-    { to: '/admin', icon: 'bi-gear-fill', label: 'Admin Panel' },
-    { to: '/admin?tab=pending', icon: 'bi-shield-check', label: 'Verifications' },
-    { to: '/admin?tab=lawyers', icon: 'bi-people', label: 'Lawyers' },
-    { to: '/admin?tab=clients', icon: 'bi-person-badge', label: 'Clients' },
+    { to: '/admin', icon: 'bi-gear-fill', label: 'Admin Panel', exact: true },
   ];
 
   const navItems = user?.role === 'admin' ? adminNav
     : user?.role === 'lawyer' ? lawyerNav
     : clientNav;
+
+  const homePath = user?.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
     <>
@@ -57,7 +58,7 @@ const Sidebar = () => {
 
       <aside className={`ll-sidebar ${mobileOpen ? 'open' : ''}`}>
         {/* Logo */}
-        <NavLink to="/dashboard" className="ll-sidebar-logo" onClick={() => setMobileOpen(false)}>
+        <NavLink to={homePath} className="ll-sidebar-logo" onClick={() => setMobileOpen(false)}>
           LawLink
         </NavLink>
 
@@ -67,7 +68,7 @@ const Sidebar = () => {
             <li key={item.to}>
               <NavLink
                 to={item.to}
-                end={item.to === '/dashboard' || item.to === '/admin'}
+                end={item.exact || item.to === '/dashboard' || item.to === '/admin'}
                 className={({ isActive }) => `ll-sidebar-item ${isActive ? 'active' : ''}`}
                 onClick={() => setMobileOpen(false)}
               >
