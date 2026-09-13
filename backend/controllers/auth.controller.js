@@ -2,7 +2,11 @@
 const User = require('../models/User.model');
 const { OAuth2Client } = require('google-auth-library');
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  'postmessage' // redirect_uri for auth-code flow via popup
+);
 
 // Admin email — auto-detected on Google Sign-In
 const ADMIN_EMAIL = 'khareshudhanshu247@gmail.com';
@@ -75,13 +79,40 @@ exports.login = async (req, res) => {
  */
 exports.googleAuth = async (req, res) => {
   try {
-    const { credential, mode } = req.body;
+    const { credential, code, mode } = req.body;
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-    const { sub: googleId, email, name } = ticket.getPayload();
+    let googleId, email, name;
+
+    if (credential) {
+      // Flow 1: ID token from <GoogleLogin> component (Register page)
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+      ({ sub: googleId, email, name } = ticket.getPayload());
+    } else if (access_token) {
+      // Flow 2: Access token from useGoogleLogin hook (Login page - works without secret)
+      const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      if (!resp.ok) {
+        return res.status(401).json({ success: false, message: 'Invalid Google access token' });
+      }
+      const profile = await resp.json();
+      googleId = profile.sub;
+      email = profile.email;
+      name = profile.name;
+    } else if (code) {
+      // Flow 3: Auth code from useGoogleLogin hook
+      const { tokens } = await googleClient.getToken(code);
+      const ticket = await googleClient.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+      ({ sub: googleId, email, name } = ticket.getPayload());
+    } else {
+      return res.status(400).json({ success: false, message: 'Missing credential, access_token, or code' });
+    }
 
     const existingUser = await User.findOne({ email });
 

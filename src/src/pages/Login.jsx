@@ -1,11 +1,27 @@
 // src/src/pages/Login.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { loginUser } from '../services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
+
+const GoogleGIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g clipPath="url(#login-google-g-clip)">
+      <path fill="#4285F4" d="M8 6.99902V10.0972H12.3054C12.1164 11.0936 11.549 11.9372 10.6981 12.5045L13.2945 14.5191C14.8072 13.1227 15.68 11.0718 15.68 8.63547C15.68 8.0682 15.6291 7.5227 15.5345 6.99911L8 6.99902Z" />
+      <path fill="#34A853" d="M3.51649 9.97632L2.93092 10.4246L0.858154 12.0391C2.17451 14.65 4.8725 16.4536 7.99974 16.4536C10.1597 16.4536 11.9706 15.7409 13.2942 14.5191L10.6979 12.5046C9.98516 12.9846 9.07606 13.2755 7.99974 13.2755C5.91976 13.2755 4.15254 11.8719 3.51976 9.98094L3.51649 9.97632Z" />
+      <path fill="#FBBC05" d="M0.858119 4.86816C0.312695 5.94448 0 7.15905 0 8.45357C0 9.74809 0.312695 10.9627 0.858119 12.039C0.858119 12.0462 3.51998 9.97352 3.51998 9.97352C3.35998 9.49352 3.26541 8.98446 3.26541 8.45349C3.26541 7.92251 3.35998 7.41345 3.51998 6.93345L0.858119 4.86816Z" />
+      <path fill="#EA4335" d="M7.99991 3.63907C9.17811 3.63907 10.2254 4.04633 11.0617 4.83179L13.3526 2.54091C11.9635 1.24639 10.1599 0.453613 7.99991 0.453613C4.87266 0.453613 2.17451 2.24997 0.858154 4.86816L3.51994 6.93362C4.15263 5.04269 5.91992 3.63907 7.99991 3.63907Z" />
+    </g>
+    <defs>
+      <clipPath id="login-google-g-clip">
+        <rect width="16" height="16" fill="white" transform="translate(0 0.453613)" />
+      </clipPath>
+    </defs>
+  </svg>
+);
 
 const Login = () => {
   const [showMore, setShowMore] = useState(false);
@@ -16,12 +32,12 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleSuccess = async (tokenResponse) => {
     setError('');
     setLoading(true);
     try {
       const { data } = await api.post('/auth/google', {
-        credential: credentialResponse.credential,
+        access_token: tokenResponse.access_token,
         mode: 'login'
       });
       login(data.token, data.user);
@@ -34,6 +50,11 @@ const Login = () => {
       setError(msg);
     } finally { setLoading(false); }
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google sign-in failed'),
+  });
 
   const handleTestLogin = async (e) => {
     e.preventDefault();
@@ -55,179 +76,144 @@ const Login = () => {
       <style>{`
         .login-page {
           min-height: 100vh;
+          width: 100vw;
           display: flex;
           position: relative;
-          overflow: hidden;
-          font-family: 'Inter', -apple-system, sans-serif;
-          background: #eee9e2;
+          overflow-x: hidden;
+          background: #f4f2ee url('/assets/login-bg.jpg') no-repeat center center / cover;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* ── Dark green right background ── */
-        .login-bg-green {
-          position: absolute;
-          right: 0;
-          top: 0;
-          width: 42%;
-          height: 100%;
-          background: #3d4f3e;
-          clip-path: polygon(12% 0, 100% 0, 100% 100%, 0% 100%);
-          z-index: 0;
-        }
-
-        /* ── Stone/marble texture top-right ── */
-        .login-bg-marble {
-          position: absolute;
-          right: 0;
-          top: 0;
-          width: 18%;
-          height: 48%;
-          z-index: 1;
-          background: linear-gradient(160deg,
-            #b8b3ab 0%,
-            #a09b93 20%,
-            #b5afa7 35%,
-            #8e8980 50%,
-            #a8a39b 65%,
-            #969189 80%,
-            #b0aaa2 100%
-          );
-          opacity: 0.85;
-        }
-
-        /* ── Decorative circle ── */
-        .login-circle {
-          position: absolute;
-          width: 480px;
-          height: 480px;
-          border-radius: 50%;
-          border: 1px solid rgba(190, 185, 175, 0.45);
-          left: 42%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 1;
-          pointer-events: none;
-        }
-
-        /* ── Scale image ── */
-        .login-scale {
-          position: absolute;
-          left: -20px;
-          top: 18%;
-          width: 200px;
-          height: auto;
-          opacity: 0.18;
-          z-index: 1;
-          pointer-events: none;
-          filter: contrast(1.5) brightness(0.2);
-        }
-
-        /* ── Left section ── */
+        /* ── Left Content Area ── */
         .login-left {
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 60px 40px 60px 72px;
+          padding: 60px 40px 60px clamp(48px, 6.8vw, 110px);
           position: relative;
           z-index: 2;
-          max-width: 580px;
+          max-width: 600px;
         }
 
         .login-logo {
-          font-family: 'DM Serif Display', serif;
-          font-style: italic;
-          font-size: 1.85rem;
-          color: #1a1a1a;
-          display: block;
-          margin-bottom: 10px;
-          letter-spacing: -0.3px;
+          font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
+          font-style: normal;
+          font-size: 2.15rem;
+          font-weight: 600;
+          color: #141414;
+          display: inline-block;
+          letter-spacing: -0.4px;
+          line-height: 1;
         }
 
         .login-logo-line {
-          width: 32px;
-          height: 2.5px;
-          background: #1a1a1a;
-          margin-bottom: 72px;
+          width: 34px;
+          height: 2px;
+          background: #141414;
+          margin-top: 8px;
+          margin-bottom: clamp(48px, 8vh, 76px);
         }
 
         .login-heading {
-          font-family: 'DM Serif Display', serif;
-          font-size: clamp(2.6rem, 4vw, 3.8rem);
-          line-height: 1.08;
-          color: #111;
+          font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
+          font-size: clamp(2.8rem, 4.3vw, 4.2rem);
+          line-height: 1.07;
+          color: #111111;
           margin: 0 0 24px 0;
-          max-width: 400px;
-          font-weight: 400;
+          font-weight: 600;
           letter-spacing: -1.2px;
         }
 
         .login-subtitle {
-          font-size: 0.92rem;
-          color: #7a756e;
-          line-height: 1.65;
-          max-width: 370px;
+          font-family: 'Inter', -apple-system, sans-serif;
+          font-size: 0.94rem;
+          color: #68645e;
+          line-height: 1.68;
+          max-width: 415px;
           margin: 0;
           font-weight: 400;
         }
 
-        /* ── Right section ── */
+        /* ── Right Content Area ── */
         .login-right {
-          width: 460px;
           display: flex;
           align-items: center;
-          justify-content: center;
-          padding: 40px 48px 40px 20px;
+          justify-content: flex-start;
+          padding: 40px clamp(32px, 8vw, 120px) 40px 20px;
           position: relative;
           z-index: 5;
         }
 
-        /* ── Card ── */
+        /* ── White Login Card ── */
         .login-card {
-          background: rgba(255, 255, 255, 0.93);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-radius: 14px;
-          padding: 40px 36px;
+          background: #fbfaf7;
+          border-radius: 18px;
+          padding: 44px 38px 40px;
           width: 100%;
-          max-width: 380px;
-          box-shadow: 0 6px 36px rgba(0,0,0,0.07);
+          min-width: 360px;
+          max-width: 415px;
+          box-shadow: 0 16px 44px -8px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.02);
+          box-sizing: border-box;
         }
 
         .login-card-title {
-          font-family: 'DM Serif Display', serif;
+          font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
           text-align: center;
-          margin: 0 0 4px 0;
-          font-size: 1.55rem;
-          font-weight: 400;
-          color: #1a1a1a;
+          margin: 0 0 6px 0;
+          font-size: 1.7rem;
+          font-weight: 600;
+          color: #141414;
           letter-spacing: -0.3px;
         }
 
         .login-card-sub {
+          font-family: 'Inter', sans-serif;
           text-align: center;
-          color: #9a958e;
-          font-size: 0.82rem;
-          margin: 0 0 24px 0;
+          color: #7e7a73;
+          font-size: 0.84rem;
+          margin: 0 0 28px 0;
+          font-weight: 400;
         }
 
-        /* Google button wrapper */
-        .login-google-wrap {
-          background: rgba(230, 226, 220, 0.45);
-          border-radius: 24px;
-          padding: 4px;
-          margin-bottom: 16px;
+        /* ── Custom Google Pill Button ── */
+        .login-google-btn {
+          width: 100%;
+          height: 48px;
           display: flex;
+          align-items: center;
           justify-content: center;
+          gap: 12px;
+          background: #e8e7ee;
+          border: none;
+          border-radius: 10px;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.88rem;
+          font-weight: 500;
+          color: #242424;
+          cursor: pointer;
+          transition: background 0.15s ease, transform 0.1s ease;
+          box-sizing: border-box;
+        }
+        .login-google-btn:hover {
+          background: #dddce5;
+        }
+        .login-google-btn:active {
+          transform: scale(0.99);
+        }
+        .login-google-btn:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
         }
 
-        /* Divider */
+        /* ── Divider ── */
         .login-divider {
           display: flex;
           align-items: center;
           gap: 12px;
-          margin: 16px 0;
-          color: #c0bbb3;
-          font-size: 0.78rem;
+          margin: 20px 0;
+          color: #a8a49c;
+          font-size: 0.8rem;
         }
         .login-divider span { flex-shrink: 0; }
         .login-divider::before,
@@ -235,36 +221,45 @@ const Login = () => {
           content: '';
           flex: 1;
           height: 1px;
-          background: #ddd8d0;
+          background: #dfdad2;
         }
 
-        /* More options btn */
+        /* ── More Options Button ── */
         .login-more-btn {
           width: 100%;
-          padding: 12px 20px;
-          background: #fff;
-          border: 1px solid #ddd8d0;
-          border-radius: 8px;
-          font-family: 'Inter', sans-serif;
-          font-size: 0.87rem;
-          color: #1a1a1a;
+          height: 44px;
+          background: #faf9f6;
+          border: 1px solid #dedad2;
+          border-radius: 10px;
+          font-family: 'Playfair Display', 'DM Serif Display', 'Inter', serif;
+          font-size: 0.92rem;
+          color: #242424;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          position: relative;
           font-weight: 500;
-          transition: border-color 0.15s;
+          transition: border-color 0.15s ease, background 0.15s ease;
+          box-sizing: border-box;
         }
         .login-more-btn:hover {
-          border-color: #bbb6ae;
+          border-color: #beb9af;
+          background: #f4f3ef;
+        }
+        .login-more-chevron {
+          position: absolute;
+          right: 18px;
+          font-size: 0.75rem;
+          color: #4a4a4a;
+          transition: transform 0.2s ease;
         }
 
-        /* Watch demo btn */
+        /* ── Watch Demo Button ── */
         .login-demo-btn {
           width: 100%;
-          margin-top: 16px;
-          background: #3d4f3e;
+          margin-top: 18px;
+          background: #25382b;
           border: none;
           border-radius: 10px;
           cursor: pointer;
@@ -272,13 +267,14 @@ const Login = () => {
           align-items: center;
           height: 48px;
           overflow: hidden;
-          transition: background 0.15s;
+          transition: background 0.15s ease;
+          box-sizing: border-box;
         }
         .login-demo-btn:hover {
-          background: #4a5e4b;
+          background: #2f4536;
         }
         .login-demo-play {
-          width: 48px;
+          width: 50px;
           height: 48px;
           display: flex;
           align-items: center;
@@ -286,18 +282,26 @@ const Login = () => {
           flex-shrink: 0;
         }
         .login-demo-play-circle {
-          width: 30px;
-          height: 30px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
-          border: 1.5px solid rgba(255,255,255,0.85);
+          border: 1.5px solid rgba(255, 255, 255, 0.85);
           display: flex;
           align-items: center;
           justify-content: center;
         }
+        .login-demo-triangle {
+          width: 0;
+          height: 0;
+          border-top: 4px solid transparent;
+          border-bottom: 4px solid transparent;
+          border-left: 6.5px solid #ffffff;
+          margin-left: 2px;
+        }
         .login-demo-divider {
           width: 1px;
           height: 22px;
-          background: rgba(255,255,255,0.22);
+          background: rgba(255, 255, 255, 0.22);
         }
         .login-demo-text {
           flex: 1;
@@ -305,26 +309,73 @@ const Login = () => {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          color: #fff;
+          color: #ffffff;
           font-family: 'Inter', sans-serif;
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           font-weight: 500;
-          padding-right: 12px;
+          padding-right: 14px;
         }
 
-        /* Error alert */
+        /* ── Error Banner ── */
         .login-error {
           background: #fef2f2;
           border: 1px solid #fecaca;
           color: #dc2626;
-          padding: 9px 14px;
+          padding: 10px 14px;
           border-radius: 8px;
-          font-size: 0.78rem;
-          margin-bottom: 14px;
+          font-size: 0.8rem;
+          margin-bottom: 16px;
           text-align: center;
         }
 
-        /* Test login inputs */
+        /* ── Dropdown Item Styles ── */
+        .ll-dropdown {
+          background: #fff;
+          border: 1px solid #e5e1d8;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-top: 8px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+        .ll-dropdown-item {
+          width: 100%;
+          padding: 11px 14px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: none;
+          border: none;
+          text-align: left;
+          cursor: pointer;
+          transition: background 0.12s;
+        }
+        .ll-dropdown-item:hover {
+          background: #f7f6f2;
+        }
+        .ll-dropdown-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: #f0ede6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #333;
+          flex-shrink: 0;
+        }
+        .ll-dropdown-text h6 {
+          margin: 0;
+          font-size: 0.84rem;
+          font-weight: 600;
+          color: #1a1a1a;
+        }
+        .ll-dropdown-text p {
+          margin: 0;
+          font-size: 0.74rem;
+          color: #777;
+        }
+
+        /* ── Test Login Inputs ── */
         .login-test-input {
           width: 100%;
           padding: 10px 14px;
@@ -338,13 +389,12 @@ const Login = () => {
           transition: border-color 0.15s;
         }
         .login-test-input:focus {
-          border-color: #3d4f3e;
+          border-color: #25382b;
         }
-
         .login-test-submit {
           width: 100%;
           padding: 11px;
-          background: #3d4f3e;
+          background: #25382b;
           color: #fff;
           border: none;
           border-radius: 8px;
@@ -352,34 +402,44 @@ const Login = () => {
           font-weight: 500;
           cursor: pointer;
           font-family: 'Inter', sans-serif;
+          transition: background 0.15s;
         }
         .login-test-submit:hover {
-          background: #4a5e4b;
+          background: #2f4536;
         }
 
         @media (max-width: 900px) {
-          .login-page { flex-direction: column; }
-          .login-bg-green { display: none; }
-          .login-bg-marble { display: none; }
-          .login-circle { display: none; }
-          .login-scale { display: none; }
-          .login-left { padding: 40px 24px 20px; max-width: 100%; }
-          .login-right { width: 100%; padding: 20px 24px 40px; }
-          .login-logo-line { margin-bottom: 32px; }
+          .login-page {
+            flex-direction: column;
+            background-size: cover;
+            background-position: top center;
+          }
+          .login-left {
+            padding: 40px 24px 20px;
+            max-width: 100%;
+          }
+          .login-right {
+            width: 100%;
+            padding: 20px 24px 40px;
+            justify-content: center;
+          }
+          .login-card {
+            max-width: 100%;
+            min-width: unset;
+          }
+          .login-logo-line {
+            margin-bottom: 32px;
+          }
         }
       `}</style>
 
       <div className="login-page">
-        <div className="login-bg-green" />
-        <div className="login-bg-marble" />
-        <div className="login-circle" />
-
-        <img src="/assets/justice-scale.jpg" alt="" className="login-scale" />
-
         {/* ══════ LEFT SIDE ══════ */}
         <div className="login-left">
-          <span className="login-logo">LawLink</span>
-          <div className="login-logo-line" />
+          <div className="login-logo-wrap">
+            <span className="login-logo">LawLink</span>
+            <div className="login-logo-line" />
+          </div>
 
           <h1 className="login-heading">
             Your legal<br />work, in one<br />place.
@@ -393,9 +453,9 @@ const Login = () => {
         {/* ══════ RIGHT SIDE ══════ */}
         <div className="login-right">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
             className="login-card"
           >
             <h2 className="login-card-title">Welcome to LawLink</h2>
@@ -403,25 +463,33 @@ const Login = () => {
 
             {error && <div className="login-error">{error}</div>}
 
-            {/* Google Sign In */}
-            <div className="login-google-wrap">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError('Google sign-in failed')}
-                text="continue_with"
-                shape="pill"
-                size="large"
-                width="310"
-              />
-            </div>
+            {/* Google Sign In — custom pill button matching reference */}
+            <button
+              type="button"
+              className="login-google-btn"
+              onClick={() => googleLogin()}
+              disabled={loading}
+            >
+              <GoogleGIcon />
+              <span>{loading ? 'Signing in…' : 'Continue with Google'}</span>
+            </button>
 
             {/* Divider */}
             <div className="login-divider"><span>or</span></div>
 
             {/* More Options */}
-            <button className="login-more-btn" onClick={() => setShowMore(!showMore)}>
-              More options
-              <i className={`bi bi-chevron-${showMore ? 'up' : 'down'}`} style={{ fontSize: '0.68rem' }} />
+            <button
+              type="button"
+              className="login-more-btn"
+              onClick={() => setShowMore(!showMore)}
+            >
+              <span>More options</span>
+              <span
+                className="login-more-chevron"
+                style={{ transform: showMore ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                ▼
+              </span>
             </button>
 
             {/* Dropdown */}
@@ -433,8 +501,12 @@ const Login = () => {
                   exit={{ opacity: 0, height: 0 }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className="ll-dropdown" style={{ marginTop: '8px' }}>
-                    <button className="ll-dropdown-item" onClick={() => setShowTestLogin(!showTestLogin)}>
+                  <div className="ll-dropdown">
+                    <button
+                      type="button"
+                      className="ll-dropdown-item"
+                      onClick={() => setShowTestLogin(!showTestLogin)}
+                    >
                       <div className="ll-dropdown-icon"><i className="bi bi-person" /></div>
                       <div className="ll-dropdown-text">
                         <h6>Log in with test account</h6>
@@ -462,14 +534,26 @@ const Login = () => {
                   exit={{ opacity: 0, height: 0 }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <form onSubmit={handleTestLogin} style={{ marginTop: '12px' }}>
+                  <form onSubmit={handleTestLogin} style={{ marginTop: '14px' }}>
                     <div style={{ marginBottom: '10px' }}>
-                      <input type="email" placeholder="Email" required className="login-test-input"
-                        value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                      <input
+                        type="email"
+                        placeholder="Email (e.g. rahul@example.com)"
+                        required
+                        className="login-test-input"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
                     </div>
                     <div style={{ marginBottom: '12px' }}>
-                      <input type="password" placeholder="Password" required className="login-test-input"
-                        value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        required
+                        className="login-test-input"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      />
                     </div>
                     <button type="submit" disabled={loading} className="login-test-submit">
                       {loading ? 'Signing in...' : 'Sign In'}
@@ -479,17 +563,23 @@ const Login = () => {
               )}
             </AnimatePresence>
 
-            {/* Watch Demo */}
-            <button className="login-demo-btn" onClick={() => {/* Google Drive link TBD */}}>
+            {/* Watch Demo Button — per user request, link will be attached later */}
+            <button
+              type="button"
+              className="login-demo-btn"
+              onClick={() => {
+                /* User will attach Google Drive link later */
+              }}
+            >
               <div className="login-demo-play">
                 <div className="login-demo-play-circle">
-                  <span style={{ color: '#fff', fontSize: '0.6rem', marginLeft: '2px' }}>▶</span>
+                  <div className="login-demo-triangle" />
                 </div>
               </div>
               <div className="login-demo-divider" />
               <div className="login-demo-text">
                 <span>Watch demo</span>
-                <span style={{ fontSize: '0.95rem' }}>→</span>
+                <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>→</span>
               </div>
             </button>
           </motion.div>
