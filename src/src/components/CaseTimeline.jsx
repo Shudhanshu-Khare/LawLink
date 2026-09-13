@@ -2,61 +2,56 @@
 import { motion } from 'framer-motion';
 
 const STAGES = [
-  { key: 'intake', label: 'Intake', icon: '📋' },
-  { key: 'investigation', label: 'Investigation', icon: '🔍' },
-  { key: 'filing', label: 'Filing', icon: '📁' },
-  { key: 'hearing', label: 'Hearing', icon: '⚖️' },
-  { key: 'resolution', label: 'Resolution', icon: '✅' },
-  { key: 'closed', label: 'Closed', icon: '🔒' }
+  { key: 'intake', label: 'Intake', icon: 'bi-clipboard' },
+  { key: 'investigation', label: 'Investigation', icon: 'bi-search' },
+  { key: 'filing', label: 'Filing', icon: 'bi-folder' },
+  { key: 'hearing', label: 'Hearing', icon: 'bi-building' },
+  { key: 'resolution', label: 'Resolution', icon: 'bi-check-circle' },
+  { key: 'closed', label: 'Closed', icon: 'bi-lock' }
 ];
 
 const CaseTimeline = ({ currentStatus, milestones = [] }) => {
   const currentIdx = STAGES.findIndex(s => s.key === currentStatus);
 
   return (
-    <div className="py-3">
+    <div style={{ padding: '16px 0' }}>
       {/* Progress bar */}
-      <div className="d-flex align-items-center mb-4 position-relative">
+      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '28px' }}>
         {/* Background track */}
-        <div className="position-absolute w-100" style={{ height: 4, background: '#e9ecef', top: '50%', transform: 'translateY(-50%)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', width: '100%', height: '3px', background: 'var(--border)', top: '50%', transform: 'translateY(-50%)' }} />
         {/* Filled track */}
         <motion.div
-          className="position-absolute"
-          style={{ height: 4, background: 'linear-gradient(90deg, #10b981, #059669)', top: '50%', transform: 'translateY(-50%)', zIndex: 1, borderRadius: 4 }}
+          style={{ position: 'absolute', height: '3px', background: 'var(--accent)', top: '50%', transform: 'translateY(-50%)', borderRadius: '2px', zIndex: 1 }}
           initial={{ width: '0%' }}
           animate={{ width: `${(currentIdx / (STAGES.length - 1)) * 100}%` }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
         />
 
         {/* Stage dots */}
-        <div className="d-flex justify-content-between w-100 position-relative" style={{ zIndex: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', position: 'relative', zIndex: 2 }}>
           {STAGES.map((stage, i) => {
             const isComplete = i <= currentIdx;
             const isCurrent = i === currentIdx;
             return (
-              <motion.div
-                key={stage.key}
-                className="text-center"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-                  style={{
-                    width: isCurrent ? 44 : 36,
-                    height: isCurrent ? 44 : 36,
-                    background: isComplete ? '#10b981' : '#e9ecef',
-                    color: isComplete ? 'white' : '#adb5bd',
-                    fontSize: isCurrent ? 20 : 16,
-                    border: isCurrent ? '3px solid #059669' : 'none',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {stage.icon}
+              <motion.div key={stage.key} style={{ textAlign: 'center' }}
+                          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1 }}>
+                <div style={{
+                  width: isCurrent ? 40 : 32, height: isCurrent ? 40 : 32,
+                  borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 6px',
+                  background: isComplete ? 'var(--accent)' : 'var(--bg-page)',
+                  color: isComplete ? '#fff' : 'var(--text-muted)',
+                  border: isCurrent ? '2px solid var(--accent-hover)' : `1px solid ${isComplete ? 'var(--accent)' : 'var(--border)'}`,
+                  fontSize: isCurrent ? '0.9rem' : '0.75rem',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <i className={`bi ${stage.icon}`} />
                 </div>
-                <small className={`d-block ${isCurrent ? 'fw-bold text-dark' : 'text-muted'}`}
-                       style={{ fontSize: 11 }}>
+                <small style={{
+                  fontSize: '0.65rem', display: 'block',
+                  fontWeight: isCurrent ? 600 : 400,
+                  color: isCurrent ? 'var(--text-primary)' : 'var(--text-muted)'
+                }}>
                   {stage.label}
                 </small>
               </motion.div>
@@ -67,23 +62,19 @@ const CaseTimeline = ({ currentStatus, milestones = [] }) => {
 
       {/* Milestone log */}
       {milestones.length > 0 && (
-        <div className="mt-3">
-          <h6 className="fw-bold mb-2" style={{ fontSize: 13 }}>Timeline</h6>
+        <div style={{ marginTop: '16px' }}>
+          <label className="ll-label" style={{ marginBottom: '10px' }}>Timeline</label>
           {milestones.slice().reverse().map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="d-flex mb-2"
-            >
-              <div className="me-3 text-muted" style={{ fontSize: 11, minWidth: 80 }}>
+            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        style={{ display: 'flex', marginBottom: '8px', fontSize: '0.8rem' }}>
+              <div style={{ color: 'var(--text-muted)', minWidth: '80px', fontSize: '0.75rem' }}>
                 {new Date(m.timestamp).toLocaleDateString()}
               </div>
               <div>
-                <span className="badge bg-light text-dark me-2" style={{ fontSize: 10 }}>{m.stage}</span>
-                <span className="small">{m.note}</span>
-                {m.addedBy && <span className="text-muted small ms-1">— {m.addedBy.name}</span>}
+                <span className="ll-badge" style={{ marginRight: '8px', fontSize: '0.65rem' }}>{m.stage}</span>
+                <span>{m.note}</span>
+                {m.addedBy && <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>— {m.addedBy.name}</span>}
               </div>
             </motion.div>
           ))}

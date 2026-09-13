@@ -9,8 +9,7 @@ const PRACTICE_AREAS = ['criminal', 'civil', 'family', 'corporate', 'property', 
 const Profile = () => {
   const { user, isLawyer } = useAuth();
   const [form, setForm] = useState({
-    bio: '',
-    barRegistrationNumber: '', yearsOfExperience: '', feePerHour: '', practiceAreas: []
+    bio: '', barRegistrationNumber: '', yearsOfExperience: '', feePerHour: '', practiceAreas: []
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -20,28 +19,18 @@ const Profile = () => {
       const { data } = await api.get('/auth/me');
       const u = data.user;
       setForm({
-        bio: u.bio || '',
-        barRegistrationNumber: u.barRegistrationNumber || '',
-        yearsOfExperience: u.yearsOfExperience || '',
-        feePerHour: u.feePerHour || '',
+        bio: u.bio || '', barRegistrationNumber: u.barRegistrationNumber || '',
+        yearsOfExperience: u.yearsOfExperience || '', feePerHour: u.feePerHour || '',
         practiceAreas: u.practiceAreas || []
       });
     };
     loadProfile();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setSaved(false);
-  };
-
+  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setSaved(false); };
   const toggleArea = (area) => {
     const current = form.practiceAreas;
-    if (current.includes(area)) {
-      setForm({ ...form, practiceAreas: current.filter(a => a !== area) });
-    } else {
-      setForm({ ...form, practiceAreas: [...current, area] });
-    }
+    setForm({ ...form, practiceAreas: current.includes(area) ? current.filter(a => a !== area) : [...current, area] });
     setSaved(false);
   };
 
@@ -54,109 +43,91 @@ const Profile = () => {
       if (payload.feePerHour) payload.feePerHour = Number(payload.feePerHour);
       await api.put('/auth/profile', payload);
       setSaved(true);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Update failed');
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Update failed'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <div className="container py-4" style={{ maxWidth: 640 }}>
-      <h2 className="fw-bold mb-4">Edit Profile</h2>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: 640 }}>
+      <h1 style={{ fontFamily: 'var(--font-serif)', marginBottom: '24px' }}>Edit Profile</h1>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-        <div className="card-body p-4">
-          <form onSubmit={handleSubmit}>
-            {/* Common fields — name and email are read-only */}
-            <div className="mb-3">
-              <label className="form-label">Full Name</label>
-              <input type="text" className="form-control" value={user?.name || ''} disabled />
-              <small className="text-muted">Name cannot be changed</small>
-            </div>
-            <div className="mb-3">
-              <label className="form-label">Email</label>
-              <input type="email" className="form-control" value={user?.email || ''} disabled />
-              <small className="text-muted">Email cannot be changed</small>
-            </div>
+      <div className="ll-card">
+        <form onSubmit={handleSubmit}>
+          {/* Read-only fields */}
+          <div style={{ marginBottom: '16px' }}>
+            <label className="ll-label">Full Name</label>
+            <input className="ll-input" type="text" value={user?.name || ''} disabled style={{ opacity: 0.6 }} />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Name cannot be changed</small>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label className="ll-label">Email</label>
+            <input className="ll-input" type="email" value={user?.email || ''} disabled style={{ opacity: 0.6 }} />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Email cannot be changed</small>
+          </div>
 
-            {/* Lawyer-specific fields */}
-            {isLawyer && (
-              <div className="p-3 rounded mb-3" style={{ background: '#f1f5f9' }}>
-                <h6 className="fw-bold mb-3" style={{ color: '#334155' }}>Professional Details</h6>
-
-                <div className="mb-3">
-                  <label className="form-label">Bar Registration Number</label>
-                  <input type="text" name="barRegistrationNumber" className="form-control"
-                         placeholder="e.g. BAR-DL-2020-001"
-                         value={form.barRegistrationNumber} onChange={handleChange} />
+          {/* Lawyer fields */}
+          {isLawyer && (
+            <div style={{ background: 'var(--accent-light)', padding: '20px', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}>
+              <h6 style={{ fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>Professional Details</h6>
+              <div style={{ marginBottom: '12px' }}>
+                <label className="ll-label">Bar Registration Number</label>
+                <input className="ll-input" type="text" name="barRegistrationNumber" placeholder="e.g. BAR-DL-2020-001"
+                       value={form.barRegistrationNumber} onChange={handleChange} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label className="ll-label">Years of Experience</label>
+                  <input className="ll-input" type="number" name="yearsOfExperience" min="0" max="50" placeholder="e.g. 5"
+                         value={form.yearsOfExperience} onChange={handleChange} />
                 </div>
-
-                <div className="row mb-3">
-                  <div className="col-6">
-                    <label className="form-label">Years of Experience</label>
-                    <input type="number" name="yearsOfExperience" className="form-control"
-                           min="0" max="50" placeholder="e.g. 5"
-                           value={form.yearsOfExperience} onChange={handleChange} />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label">Fee (Rs./hr)</label>
-                    <input type="number" name="feePerHour" className="form-control"
-                           min="100" step="100" placeholder="e.g. 2500"
-                           value={form.feePerHour} onChange={handleChange} />
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Practice Areas</label>
-                  <div className="d-flex flex-wrap gap-2">
-                    {PRACTICE_AREAS.map(area => (
-                      <button
-                        key={area} type="button"
-                        className={`btn btn-sm ${form.practiceAreas.includes(area) ? 'btn-primary' : 'btn-outline-secondary'}`}
-                        onClick={() => toggleArea(area)}
-                      >
-                        {area.charAt(0).toUpperCase() + area.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <label className="form-label">Bio</label>
-                  <textarea name="bio" className="form-control" rows={3}
-                            placeholder="Describe your expertise and experience..."
-                            value={form.bio} onChange={handleChange} />
+                <div>
+                  <label className="ll-label">Fee (₹/hr)</label>
+                  <input className="ll-input" type="number" name="feePerHour" min="100" step="100" placeholder="e.g. 2500"
+                         value={form.feePerHour} onChange={handleChange} />
                 </div>
               </div>
-            )}
-
-            {/* Client bio */}
-            {!isLawyer && (
-              <div className="mb-3">
-                <label className="form-label">Bio</label>
-                <textarea name="bio" className="form-control" rows={2}
-                          placeholder="Tell us about yourself..."
-                          value={form.bio} onChange={handleChange} />
+              <div style={{ marginBottom: '12px' }}>
+                <label className="ll-label">Practice Areas</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {PRACTICE_AREAS.map(area => (
+                    <button key={area} type="button"
+                            className={`ll-btn ll-btn-sm ${form.practiceAreas.includes(area) ? 'll-btn-primary' : 'll-btn-outline'}`}
+                            onClick={() => toggleArea(area)}>
+                      {area.charAt(0).toUpperCase() + area.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-
-            <div className="d-flex align-items-center gap-3">
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-              {saved && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                             className="text-success fw-bold">
-                  Profile updated!
-                </motion.span>
-              )}
+              <div>
+                <label className="ll-label">Bio</label>
+                <textarea className="ll-input" name="bio" rows={3} placeholder="Describe your expertise..."
+                          value={form.bio} onChange={handleChange} style={{ resize: 'vertical' }} />
+              </div>
             </div>
-          </form>
-        </div>
-      </motion.div>
-    </div>
+          )}
+
+          {/* Client bio */}
+          {!isLawyer && (
+            <div style={{ marginBottom: '16px' }}>
+              <label className="ll-label">Bio</label>
+              <textarea className="ll-input" name="bio" rows={2} placeholder="Tell us about yourself..."
+                        value={form.bio} onChange={handleChange} style={{ resize: 'vertical' }} />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button type="submit" className="ll-btn ll-btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            {saved && (
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.85rem' }}>
+                ✓ Profile updated!
+              </motion.span>
+            )}
+          </div>
+        </form>
+      </div>
+    </motion.div>
   );
 };
 

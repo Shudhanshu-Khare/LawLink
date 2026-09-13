@@ -6,7 +6,6 @@ import api from '../services/api';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Local date string to avoid UTC timezone issues
 const getLocalDateStr = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -25,18 +24,10 @@ const BookConsultation = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // 16 dates: 1 past day + today + 14 future days
   const getDates = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    return Array.from({ length: 16 }, (_, i) => {
-      const d = new Date(yesterday);
-      d.setDate(yesterday.getDate() + i);
-      return d;
-    });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    return Array.from({ length: 16 }, (_, i) => { const d = new Date(yesterday); d.setDate(yesterday.getDate() + i); return d; });
   };
 
   const [dates] = useState(getDates);
@@ -44,12 +35,7 @@ const BookConsultation = () => {
 
   useEffect(() => {
     const fetchLawyer = async () => {
-      try {
-        const { data } = await api.get(`/users/public/${lawyerId}`);
-        setLawyer(data.user);
-      } catch (err) {
-        console.error('Failed to load lawyer:', err);
-      }
+      try { const { data } = await api.get(`/users/public/${lawyerId}`); setLawyer(data.user); } catch {}
     };
     fetchLawyer();
   }, [lawyerId]);
@@ -59,14 +45,9 @@ const BookConsultation = () => {
       try {
         const startDate = getLocalDateStr(dates[0]);
         const endDate = getLocalDateStr(dates[dates.length - 1]);
-
-        const { data } = await api.get(`/consultations/availability/${lawyerId}`, {
-          params: { startDate, endDate }
-        });
+        const { data } = await api.get(`/consultations/availability/${lawyerId}`, { params: { startDate, endDate } });
         setAvailability(data.availability);
-      } catch (err) {
-        console.error('Failed to load availability:', err);
-      }
+      } catch {}
     };
     if (lawyerId) fetchAvailability();
   }, [lawyerId, dates]);
@@ -74,43 +55,35 @@ const BookConsultation = () => {
   const handleBook = async () => {
     setLoading(true);
     try {
-      await api.post('/consultations', {
-        lawyerId,
-        date: selectedDate,
-        timeSlot: selectedSlot,
-        reason
-      });
+      await api.post('/consultations', { lawyerId, date: selectedDate, timeSlot: selectedSlot, reason });
       setShowConfirm(true);
       setTimeout(() => navigate('/dashboard'), 2000);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Booking failed');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Booking failed'); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="container py-4">
-      <h2 className="fw-bold mb-4">Book Consultation</h2>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <h1 style={{ fontFamily: 'var(--font-serif)', marginBottom: '24px' }}>Book Consultation</h1>
 
+      {/* Lawyer info card */}
       {lawyer && (
-        <div className="card border-0 shadow-sm mb-4 p-3">
-          <div className="d-flex align-items-center">
-            <div className="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                 style={{ width: 56, height: 56, backgroundColor: '#e2e8f0', fontSize: '20px', fontWeight: 'bold' }}>
-              {lawyer.name?.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h5 className="mb-0 fw-bold">{lawyer.name}</h5>
-              <small className="text-muted">Rs.{lawyer.feePerHour || '—'}/hr · {lawyer.practiceAreas?.join(', ') || 'General Practice'}</small>
-            </div>
+        <div className="ll-card" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="ll-avatar" style={{ width: 52, height: 52, fontSize: '1.2rem' }}>
+            {lawyer.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{lawyer.name}</div>
+            <small style={{ color: 'var(--text-muted)' }}>
+              ₹{lawyer.feePerHour || '—'}/hr · {lawyer.practiceAreas?.join(', ') || 'General Practice'}
+            </small>
           </div>
         </div>
       )}
 
-      {/* Date selector — 16 days: 1 past (greyed) + today + 14 future */}
-      <h5 className="fw-bold mb-3">Select a Date</h5>
-      <div className="d-flex gap-2 mb-4" style={{ overflowX: 'auto', paddingBottom: 8 }}>
+      {/* Date selector */}
+      <h3 style={{ marginBottom: '16px' }}>Select a Date</h3>
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
         {dates.map(date => {
           const dateStr = getLocalDateStr(date);
           const isPast = dateStr < todayStr;
@@ -120,68 +93,47 @@ const BookConsultation = () => {
           const availCount = dayAvail?.available?.length || 0;
 
           return (
-            <div key={dateStr} style={{ minWidth: 80, flexShrink: 0 }}>
-              <div
-                className={`card text-center p-2 
-                  ${isSelected ? 'border-primary bg-primary bg-opacity-10' : ''} 
-                  ${isPast ? 'opacity-50' : ''}`}
-                style={{
-                  cursor: isPast ? 'not-allowed' : 'pointer',
-                  borderRadius: '10px',
-                  backgroundColor: isPast ? '#f1f5f9' : undefined
-                }}
-                onClick={() => {
-                  if (!isPast) {
-                    setSelectedDate(dateStr);
-                    setSelectedSlot(null);
-                  }
-                }}
-              >
-                <small className={isPast ? 'text-secondary' : 'text-muted'}>{DAYS[date.getDay()]}</small>
-                <strong className={isPast ? 'text-secondary' : ''}>{date.getDate()}</strong>
-                {isToday && <small className="text-primary" style={{ fontSize: 10 }}>TODAY</small>}
-                <small className={isPast ? 'text-secondary' : availCount > 0 ? 'text-success' : 'text-danger'}>
-                  {isPast ? 'Past' : `${availCount} slot${availCount !== 1 ? 's' : ''}`}
-                </small>
-              </div>
+            <div key={dateStr}
+                 className="ll-card"
+                 style={{
+                   minWidth: 76, flexShrink: 0, textAlign: 'center', padding: '10px 8px',
+                   cursor: isPast ? 'not-allowed' : 'pointer',
+                   opacity: isPast ? 0.4 : 1,
+                   borderColor: isSelected ? 'var(--accent)' : undefined,
+                   background: isSelected ? 'var(--accent-light)' : isPast ? 'var(--bg-sidebar)' : undefined
+                 }}
+                 onClick={() => { if (!isPast) { setSelectedDate(dateStr); setSelectedSlot(null); } }}>
+              <small style={{ color: 'var(--text-muted)', display: 'block' }}>{DAYS[date.getDay()]}</small>
+              <strong style={{ display: 'block', fontSize: '1.1rem' }}>{date.getDate()}</strong>
+              {isToday && <small style={{ color: 'var(--accent)', fontSize: '0.65rem', fontWeight: 700 }}>TODAY</small>}
+              <small style={{ display: 'block', color: isPast ? 'var(--text-muted)' : availCount > 0 ? 'var(--success)' : 'var(--danger)', fontSize: '0.7rem' }}>
+                {isPast ? 'Past' : `${availCount} slot${availCount !== 1 ? 's' : ''}`}
+              </small>
             </div>
           );
         })}
       </div>
 
-      {/* Time slots — show past/booked as greyed, available as clickable */}
+      {/* Time slots */}
       {selectedDate && availability[selectedDate] && (
-        <div className="mb-4">
-          <h5 className="fw-bold mb-3">Available Slots</h5>
-          <div className="d-flex flex-wrap gap-2">
-            {/* Past slots (greyed out) */}
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ marginBottom: '14px' }}>Available Slots</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {(availability[selectedDate].past || []).map(slot => (
-              <button key={slot} className="btn btn-outline-secondary" disabled
-                      style={{ opacity: 0.4, cursor: 'not-allowed' }}>
-                {slot}
-              </button>
+              <button key={slot} className="ll-btn ll-btn-sm ll-btn-outline" disabled style={{ opacity: 0.3, cursor: 'not-allowed' }}>{slot}</button>
             ))}
-            {/* Booked slots (greyed out) */}
             {(availability[selectedDate].booked || []).map(slot => (
-              <button key={slot} className="btn btn-outline-secondary" disabled
-                      style={{ opacity: 0.4, cursor: 'not-allowed' }}>
-                {slot}
-              </button>
+              <button key={slot} className="ll-btn ll-btn-sm ll-btn-outline" disabled style={{ opacity: 0.3, cursor: 'not-allowed' }}>{slot}</button>
             ))}
-            {/* Available slots (clickable) */}
-            {availability[selectedDate].available.length === 0 && 
+            {availability[selectedDate].available.length === 0 &&
              (availability[selectedDate].past || []).length === 0 &&
              (availability[selectedDate].booked || []).length === 0 ? (
-              <p className="text-muted">No slots for this date.</p>
+              <p style={{ color: 'var(--text-muted)' }}>No slots for this date.</p>
             ) : (
               availability[selectedDate].available.map(slot => (
-                <motion.button
-                  key={slot}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`btn ${selectedSlot === slot ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => setSelectedSlot(slot)}
-                >
+                <motion.button key={slot} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                               className={`ll-btn ll-btn-sm ${selectedSlot === slot ? 'll-btn-primary' : 'll-btn-outline'}`}
+                               onClick={() => setSelectedSlot(slot)}>
                   {slot}
                 </motion.button>
               ))
@@ -193,13 +145,12 @@ const BookConsultation = () => {
       {/* Booking form */}
       {selectedSlot && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="mb-3">
-            <label className="form-label">Reason for consultation</label>
-            <textarea className="form-control" rows={3} value={reason}
-                      onChange={e => setReason(e.target.value)}
-                      placeholder="Briefly describe your legal matter..." />
+          <div style={{ marginBottom: '16px' }}>
+            <label className="ll-label">Reason for consultation</label>
+            <textarea className="ll-input" rows={3} value={reason} onChange={e => setReason(e.target.value)}
+                      placeholder="Briefly describe your legal matter..." style={{ resize: 'vertical' }} />
           </div>
-          <button className="btn btn-primary btn-lg" onClick={handleBook} disabled={loading}>
+          <button className="ll-btn ll-btn-primary ll-btn-lg" onClick={handleBook} disabled={loading}>
             {loading ? 'Booking...' : `Book ${selectedSlot} on ${selectedDate}`}
           </button>
         </motion.div>
@@ -208,18 +159,16 @@ const BookConsultation = () => {
       {/* Success modal */}
       <AnimatePresence>
         {showConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                      style={{ background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-                        className="card border-0 shadow-lg p-4 text-center" style={{ borderRadius: '16px' }}>
-              <h3 className="text-success mb-2">Booked!</h3>
-              <p>Your consultation has been scheduled. Redirecting...</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="ll-overlay">
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="ll-modal" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✓</div>
+              <h2 style={{ color: 'var(--success)', marginBottom: '8px' }}>Booked!</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>Your consultation has been scheduled. Redirecting...</p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
 
