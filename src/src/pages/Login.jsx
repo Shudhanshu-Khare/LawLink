@@ -16,7 +16,6 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Google login
   const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
     setLoading(true);
@@ -33,12 +32,9 @@ const Login = () => {
         err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server — please wait 30s and try again.' :
         'Google sign-in failed');
       setError(msg);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // Test account login
   const handleTestLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -51,397 +47,455 @@ const Login = () => {
       const msg = err.response?.data?.message ||
         (err.code === 'ECONNABORTED' || !err.response ? 'Could not reach server.' : 'Login failed');
       setError(msg);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#f0ece6',
-      display: 'flex',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: "'Inter', sans-serif"
-    }}>
+    <>
+      <style>{`
+        .login-page {
+          min-height: 100vh;
+          display: flex;
+          position: relative;
+          overflow: hidden;
+          font-family: 'Inter', -apple-system, sans-serif;
+          background: #eee9e2;
+        }
 
-      {/* ── Dark green diagonal background shape (right side) ── */}
-      <div style={{
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        width: '45%',
-        height: '100%',
-        background: '#3a4a3c',
-        clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)',
-        zIndex: 0
-      }} />
+        /* ── Dark green right background ── */
+        .login-bg-green {
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: 42%;
+          height: 100%;
+          background: #3d4f3e;
+          clip-path: polygon(12% 0, 100% 0, 100% 100%, 0% 100%);
+          z-index: 0;
+        }
 
-      {/* ── Marble texture overlay (top-right) ── */}
-      <div style={{
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        width: '22%',
-        height: '55%',
-        background: 'linear-gradient(145deg, #c5c0b8 0%, #9a9590 30%, #b5b0a8 60%, #8a8580 100%)',
-        opacity: 0.7,
-        zIndex: 1
-      }} />
+        /* ── Stone/marble texture top-right ── */
+        .login-bg-marble {
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: 18%;
+          height: 48%;
+          z-index: 1;
+          background: linear-gradient(160deg,
+            #b8b3ab 0%,
+            #a09b93 20%,
+            #b5afa7 35%,
+            #8e8980 50%,
+            #a8a39b 65%,
+            #969189 80%,
+            #b0aaa2 100%
+          );
+          opacity: 0.85;
+        }
 
-      {/* ── Large decorative circle (thin stroke) ── */}
-      <div style={{
-        position: 'absolute',
-        width: '550px',
-        height: '550px',
-        borderRadius: '50%',
-        border: '1px solid rgba(180, 175, 168, 0.5)',
-        left: '35%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: 1,
-        pointerEvents: 'none'
-      }} />
+        /* ── Decorative circle ── */
+        .login-circle {
+          position: absolute;
+          width: 480px;
+          height: 480px;
+          border-radius: 50%;
+          border: 1px solid rgba(190, 185, 175, 0.45);
+          left: 42%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 1;
+          pointer-events: none;
+        }
 
-      {/* ── Justice Scale Image (left side) ── */}
-      <img
-        src="/assets/justice-scale.jpg"
-        alt=""
-        style={{
-          position: 'absolute',
-          left: '-40px',
-          top: '22%',
-          width: '220px',
-          height: 'auto',
-          opacity: 0.15,
-          zIndex: 1,
-          pointerEvents: 'none',
-          filter: 'contrast(1.2) brightness(0.3)'
-        }}
-      />
+        /* ── Scale image ── */
+        .login-scale {
+          position: absolute;
+          left: -20px;
+          top: 18%;
+          width: 200px;
+          height: auto;
+          opacity: 0.18;
+          z-index: 1;
+          pointer-events: none;
+          filter: contrast(1.5) brightness(0.2);
+        }
 
-      {/* ══════════ LEFT: Branding ══════════ */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '60px 60px 60px 80px',
-        position: 'relative',
-        zIndex: 2
-      }}>
-        {/* Logo */}
-        <div style={{ marginBottom: '80px' }}>
-          <span style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontStyle: 'italic',
-            fontSize: '2rem',
-            color: '#1a1a1a',
-            display: 'block',
-            marginBottom: '12px',
-            letterSpacing: '-0.5px'
-          }}>LawLink</span>
-          <div style={{
-            width: '36px',
-            height: '2.5px',
-            background: '#1a1a1a'
-          }} />
+        /* ── Left section ── */
+        .login-left {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: 60px 40px 60px 72px;
+          position: relative;
+          z-index: 2;
+          max-width: 580px;
+        }
+
+        .login-logo {
+          font-family: 'DM Serif Display', serif;
+          font-style: italic;
+          font-size: 1.85rem;
+          color: #1a1a1a;
+          display: block;
+          margin-bottom: 10px;
+          letter-spacing: -0.3px;
+        }
+
+        .login-logo-line {
+          width: 32px;
+          height: 2.5px;
+          background: #1a1a1a;
+          margin-bottom: 72px;
+        }
+
+        .login-heading {
+          font-family: 'DM Serif Display', serif;
+          font-size: clamp(2.6rem, 4vw, 3.8rem);
+          line-height: 1.08;
+          color: #111;
+          margin: 0 0 24px 0;
+          max-width: 400px;
+          font-weight: 400;
+          letter-spacing: -1.2px;
+        }
+
+        .login-subtitle {
+          font-size: 0.92rem;
+          color: #7a756e;
+          line-height: 1.65;
+          max-width: 370px;
+          margin: 0;
+          font-weight: 400;
+        }
+
+        /* ── Right section ── */
+        .login-right {
+          width: 460px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 48px 40px 20px;
+          position: relative;
+          z-index: 5;
+        }
+
+        /* ── Card ── */
+        .login-card {
+          background: rgba(255, 255, 255, 0.93);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 14px;
+          padding: 40px 36px;
+          width: 100%;
+          max-width: 380px;
+          box-shadow: 0 6px 36px rgba(0,0,0,0.07);
+        }
+
+        .login-card-title {
+          font-family: 'DM Serif Display', serif;
+          text-align: center;
+          margin: 0 0 4px 0;
+          font-size: 1.55rem;
+          font-weight: 400;
+          color: #1a1a1a;
+          letter-spacing: -0.3px;
+        }
+
+        .login-card-sub {
+          text-align: center;
+          color: #9a958e;
+          font-size: 0.82rem;
+          margin: 0 0 24px 0;
+        }
+
+        /* Google button wrapper */
+        .login-google-wrap {
+          background: rgba(230, 226, 220, 0.45);
+          border-radius: 24px;
+          padding: 4px;
+          margin-bottom: 16px;
+          display: flex;
+          justify-content: center;
+        }
+
+        /* Divider */
+        .login-divider {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 16px 0;
+          color: #c0bbb3;
+          font-size: 0.78rem;
+        }
+        .login-divider span { flex-shrink: 0; }
+        .login-divider::before,
+        .login-divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: #ddd8d0;
+        }
+
+        /* More options btn */
+        .login-more-btn {
+          width: 100%;
+          padding: 12px 20px;
+          background: #fff;
+          border: 1px solid #ddd8d0;
+          border-radius: 8px;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.87rem;
+          color: #1a1a1a;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-weight: 500;
+          transition: border-color 0.15s;
+        }
+        .login-more-btn:hover {
+          border-color: #bbb6ae;
+        }
+
+        /* Watch demo btn */
+        .login-demo-btn {
+          width: 100%;
+          margin-top: 16px;
+          background: #3d4f3e;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          height: 48px;
+          overflow: hidden;
+          transition: background 0.15s;
+        }
+        .login-demo-btn:hover {
+          background: #4a5e4b;
+        }
+        .login-demo-play {
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .login-demo-play-circle {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 1.5px solid rgba(255,255,255,0.85);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .login-demo-divider {
+          width: 1px;
+          height: 22px;
+          background: rgba(255,255,255,0.22);
+        }
+        .login-demo-text {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #fff;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.85rem;
+          font-weight: 500;
+          padding-right: 12px;
+        }
+
+        /* Error alert */
+        .login-error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: 9px 14px;
+          border-radius: 8px;
+          font-size: 0.78rem;
+          margin-bottom: 14px;
+          text-align: center;
+        }
+
+        /* Test login inputs */
+        .login-test-input {
+          width: 100%;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid #ddd8d0;
+          font-size: 0.84rem;
+          font-family: 'Inter', sans-serif;
+          outline: none;
+          background: #faf8f5;
+          box-sizing: border-box;
+          transition: border-color 0.15s;
+        }
+        .login-test-input:focus {
+          border-color: #3d4f3e;
+        }
+
+        .login-test-submit {
+          width: 100%;
+          padding: 11px;
+          background: #3d4f3e;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+        }
+        .login-test-submit:hover {
+          background: #4a5e4b;
+        }
+
+        @media (max-width: 900px) {
+          .login-page { flex-direction: column; }
+          .login-bg-green { display: none; }
+          .login-bg-marble { display: none; }
+          .login-circle { display: none; }
+          .login-scale { display: none; }
+          .login-left { padding: 40px 24px 20px; max-width: 100%; }
+          .login-right { width: 100%; padding: 20px 24px 40px; }
+          .login-logo-line { margin-bottom: 32px; }
+        }
+      `}</style>
+
+      <div className="login-page">
+        <div className="login-bg-green" />
+        <div className="login-bg-marble" />
+        <div className="login-circle" />
+
+        <img src="/assets/justice-scale.jpg" alt="" className="login-scale" />
+
+        {/* ══════ LEFT SIDE ══════ */}
+        <div className="login-left">
+          <span className="login-logo">LawLink</span>
+          <div className="login-logo-line" />
+
+          <h1 className="login-heading">
+            Your legal<br />work, in one<br />place.
+          </h1>
+
+          <p className="login-subtitle">
+            A full-stack legal workflow platform with consultations, case tracking, real-time chat, document generation, invoicing and deadline management.
+          </p>
         </div>
 
-        {/* Hero heading */}
-        <h1 style={{
-          fontFamily: "'DM Serif Display', serif",
-          fontSize: 'clamp(2.8rem, 4.5vw, 4rem)',
-          lineHeight: 1.05,
-          color: '#1a1a1a',
-          marginBottom: '28px',
-          maxWidth: '440px',
-          fontWeight: 400,
-          letterSpacing: '-1px'
-        }}>
-          Your legal<br />work, in one<br />place.
-        </h1>
+        {/* ══════ RIGHT SIDE ══════ */}
+        <div className="login-right">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="login-card"
+          >
+            <h2 className="login-card-title">Welcome to LawLink</h2>
+            <p className="login-card-sub">Sign in to continue</p>
 
-        {/* Subtitle */}
-        <p style={{
-          fontSize: '0.95rem',
-          color: '#6b6560',
-          lineHeight: 1.7,
-          maxWidth: '380px',
-          fontWeight: 400
-        }}>
-          A full-stack legal workflow platform with consultations, case tracking, real-time chat, document generation, invoicing and deadline management.
-        </p>
-      </div>
+            {error && <div className="login-error">{error}</div>}
 
-      {/* ══════════ RIGHT: Login Card ══════════ */}
-      <div style={{
-        width: '500px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px',
-        position: 'relative',
-        zIndex: 5
-      }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            background: 'rgba(255, 255, 255, 0.92)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            borderRadius: '16px',
-            padding: '44px 40px',
-            width: '100%',
-            maxWidth: '400px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
-            position: 'relative'
-          }}
-        >
-          {/* Card heading */}
-          <h2 style={{
-            fontFamily: "'DM Serif Display', serif",
-            textAlign: 'center',
-            marginBottom: '4px',
-            fontSize: '1.65rem',
-            fontWeight: 400,
-            color: '#1a1a1a',
-            letterSpacing: '-0.5px'
-          }}>Welcome to LawLink</h2>
-          <p style={{
-            textAlign: 'center',
-            color: '#8a8580',
-            fontSize: '0.85rem',
-            marginBottom: '28px'
-          }}>Sign in to continue</p>
-
-          {/* Error */}
-          {error && (
-            <div style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#dc2626',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              fontSize: '0.8rem',
-              marginBottom: '16px',
-              textAlign: 'center'
-            }}>{error}</div>
-          )}
-
-          {/* Google Sign In — styled to match image */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{
-              background: 'rgba(240, 236, 230, 0.6)',
-              borderRadius: '28px',
-              padding: '3px',
-              display: 'flex',
-              justifyContent: 'center'
-            }}>
+            {/* Google Sign In */}
+            <div className="login-google-wrap">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setError('Google sign-in failed')}
                 text="continue_with"
                 shape="pill"
                 size="large"
-                width="320"
+                width="310"
               />
             </div>
-          </div>
 
-          {/* Divider — "or" with lines */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            margin: '20px 0',
-            color: '#b5b0a8',
-            fontSize: '0.8rem'
-          }}>
-            <div style={{ flex: 1, height: '1px', background: '#ddd8d2' }} />
-            <span>or</span>
-            <div style={{ flex: 1, height: '1px', background: '#ddd8d2' }} />
-          </div>
+            {/* Divider */}
+            <div className="login-divider"><span>or</span></div>
 
-          {/* More Options button */}
-          <button
-            onClick={() => setShowMore(!showMore)}
-            style={{
-              width: '100%',
-              padding: '13px 20px',
-              background: '#ffffff',
-              border: '1px solid #ddd8d2',
-              borderRadius: '10px',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '0.88rem',
-              color: '#1a1a1a',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.15s ease',
-              fontWeight: 500
-            }}
-          >
-            More options
-            <i className={`bi bi-chevron-${showMore ? 'up' : 'down'}`}
-               style={{ fontSize: '0.7rem' }} />
-          </button>
+            {/* More Options */}
+            <button className="login-more-btn" onClick={() => setShowMore(!showMore)}>
+              More options
+              <i className={`bi bi-chevron-${showMore ? 'up' : 'down'}`} style={{ fontSize: '0.68rem' }} />
+            </button>
 
-          {/* Dropdown */}
-          <AnimatePresence>
-            {showMore && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                style={{ overflow: 'hidden' }}
-              >
-                <div className="ll-dropdown" style={{ marginTop: '8px' }}>
-                  {/* Test account option */}
-                  <button
-                    className="ll-dropdown-item"
-                    onClick={() => setShowTestLogin(!showTestLogin)}
-                  >
-                    <div className="ll-dropdown-icon">
-                      <i className="bi bi-person" />
-                    </div>
-                    <div className="ll-dropdown-text">
-                      <h6>Log in with test account</h6>
-                      <p>Explore the platform</p>
-                    </div>
-                  </button>
-
-                  {/* Register option */}
-                  <Link to="/register" className="ll-dropdown-item" style={{ textDecoration: 'none' }}>
-                    <div className="ll-dropdown-icon">
-                      <i className="bi bi-plus" />
-                    </div>
-                    <div className="ll-dropdown-text">
-                      <h6>Don't have an account?</h6>
-                      <p>Register now</p>
-                    </div>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Test Account Login Form */}
-          <AnimatePresence>
-            {showTestLogin && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                style={{ overflow: 'hidden' }}
-              >
-                <form onSubmit={handleTestLogin} style={{ marginTop: '12px' }}>
-                  <div style={{ marginBottom: '10px' }}>
-                    <input
-                      type="email" placeholder="Email" required
-                      style={{
-                        width: '100%', padding: '11px 14px', borderRadius: '8px',
-                        border: '1px solid #ddd8d2', fontSize: '0.85rem',
-                        fontFamily: "'Inter', sans-serif", outline: 'none',
-                        background: '#faf9f7', boxSizing: 'border-box'
-                      }}
-                      value={formData.email}
-                      onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    />
+            {/* Dropdown */}
+            <AnimatePresence>
+              {showMore && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="ll-dropdown" style={{ marginTop: '8px' }}>
+                    <button className="ll-dropdown-item" onClick={() => setShowTestLogin(!showTestLogin)}>
+                      <div className="ll-dropdown-icon"><i className="bi bi-person" /></div>
+                      <div className="ll-dropdown-text">
+                        <h6>Log in with test account</h6>
+                        <p>Explore the platform</p>
+                      </div>
+                    </button>
+                    <Link to="/register" className="ll-dropdown-item" style={{ textDecoration: 'none' }}>
+                      <div className="ll-dropdown-icon"><i className="bi bi-plus" /></div>
+                      <div className="ll-dropdown-text">
+                        <h6>Don't have an account?</h6>
+                        <p>Register now</p>
+                      </div>
+                    </Link>
                   </div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <input
-                      type="password" placeholder="Password" required
-                      style={{
-                        width: '100%', padding: '11px 14px', borderRadius: '8px',
-                        border: '1px solid #ddd8d2', fontSize: '0.85rem',
-                        fontFamily: "'Inter', sans-serif", outline: 'none',
-                        background: '#faf9f7', boxSizing: 'border-box'
-                      }}
-                      value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    />
-                  </div>
-                  <button type="submit" disabled={loading}
-                    style={{
-                      width: '100%', padding: '12px', background: '#3a4a3c',
-                      color: '#fff', border: 'none', borderRadius: '8px',
-                      fontSize: '0.88rem', fontWeight: 500, cursor: 'pointer',
-                      fontFamily: "'Inter', sans-serif"
-                    }}>
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Watch Demo Button — exact match to image */}
-          <div style={{ marginTop: '20px' }}>
-            <button
-              style={{
-                width: '100%',
-                padding: '0',
-                background: '#3a4a3c',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-                height: '50px'
-              }}
-              onClick={() => {/* User will add Google Drive link later */}}
-            >
-              {/* Play circle icon */}
-              <div style={{
-                width: '50px',
-                height: '50px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  border: '2px solid rgba(255,255,255,0.9)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <span style={{ color: '#fff', fontSize: '0.7rem', marginLeft: '2px' }}>▶</span>
+            {/* Test Account Form */}
+            <AnimatePresence>
+              {showTestLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <form onSubmit={handleTestLogin} style={{ marginTop: '12px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <input type="email" placeholder="Email" required className="login-test-input"
+                        value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                    </div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <input type="password" placeholder="Password" required className="login-test-input"
+                        value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                    </div>
+                    <button type="submit" disabled={loading} className="login-test-submit">
+                      {loading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Watch Demo */}
+            <button className="login-demo-btn" onClick={() => {/* Google Drive link TBD */}}>
+              <div className="login-demo-play">
+                <div className="login-demo-play-circle">
+                  <span style={{ color: '#fff', fontSize: '0.6rem', marginLeft: '2px' }}>▶</span>
                 </div>
               </div>
-              {/* Vertical divider */}
-              <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.25)' }} />
-              {/* Text */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                color: '#fff',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '0.88rem',
-                fontWeight: 500,
-                paddingRight: '16px'
-              }}>
+              <div className="login-demo-divider" />
+              <div className="login-demo-text">
                 <span>Watch demo</span>
-                <span style={{ fontSize: '1rem' }}>→</span>
+                <span style={{ fontSize: '0.95rem' }}>→</span>
               </div>
             </button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
