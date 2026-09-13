@@ -84,12 +84,15 @@ const Login = () => {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* ── LawLink Logo (moved up ~1.5cm) ── */
+        /* ── LawLink Logo (non-clickable) ── */
         .login-logo-wrap {
           position: absolute;
           top: clamp(75px, 12vh, 125px);
           left: clamp(48px, 6.8vw, 110px);
           z-index: 10;
+          cursor: default;
+          user-select: none;
+          pointer-events: none;
         }
 
         .login-logo {

@@ -215,12 +215,15 @@ const Register = () => {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* ── LawLink Logo (Exact Position from Login Page) ── */
+        /* ── LawLink Logo (Exact Position from Login Page, non-clickable) ── */
         .register-logo-wrap {
           position: absolute;
           top: clamp(75px, 12vh, 125px);
           left: clamp(48px, 6.8vw, 110px);
           z-index: 10;
+          cursor: default;
+          user-select: none;
+          pointer-events: none;
         }
 
         .register-logo {

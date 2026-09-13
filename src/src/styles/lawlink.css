@@ -22,7 +22,7 @@
   --warning: #8b6b2e;
 
   /* Typography */
-  --font-serif: 'DM Serif Display', Georgia, serif;
+  --font-serif: 'Playfair Display', 'DM Serif Display', Georgia, serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Spacing */
@@ -90,17 +90,39 @@ p { color: var(--text-secondary); }
   overflow-y: auto;
 }
 
+.ll-sidebar-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 6px 16px 6px;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
+}
+
 .ll-sidebar-logo {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 1.5rem;
-  color: var(--text-primary);
+  font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
+  font-style: normal;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #141414);
+  letter-spacing: -0.4px;
+  line-height: 1;
+  display: inline-block;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
   text-decoration: none;
-  padding-bottom: 12px;
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--text-primary);
-  display: block;
-  width: fit-content;
+}
+
+.ll-sidebar-logo-line {
+  width: 32px;
+  height: 2px;
+  background: var(--text-primary, #141414);
+  margin-top: 6px;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
 }
 
 .ll-sidebar-nav {

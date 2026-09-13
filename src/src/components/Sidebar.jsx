@@ -57,10 +57,11 @@ const Sidebar = () => {
       </button>
 
       <aside className={`ll-sidebar ${mobileOpen ? 'open' : ''}`}>
-        {/* Logo */}
-        <NavLink to={homePath} className="ll-sidebar-logo" onClick={() => setMobileOpen(false)}>
-          LawLink
-        </NavLink>
+        {/* Logo (exact same design as login page, not clickable) */}
+        <div className="ll-sidebar-logo-wrap" aria-label="LawLink Logo">
+          <span className="ll-sidebar-logo">LawLink</span>
+          <div className="ll-sidebar-logo-line" />
+        </div>
 
         {/* Nav */}
         <ul className="ll-sidebar-nav">
