@@ -7,114 +7,82 @@ import api from '../services/api';
 
 const LEGAL_AREAS = ['criminal', 'civil', 'family', 'corporate', 'property', 'labour'];
 
+const STATUS_STYLES = {
+  intake: 'll-status-pending', investigation: 'll-status-pending', filing: 'll-status-active',
+  hearing: 'll-status-closed', resolution: 'll-status-active', closed: 'll-status-closed'
+};
+
 const CaseManager = () => {
   const { user, isLawyer } = useAuth();
   const [cases, setCases] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
   const [loading, setLoading] = useState(true);
   const [milestoneNote, setMilestoneNote] = useState('');
-
-  // Create Case form state (lawyer only)
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [clients, setClients] = useState([]);
   const [newCase, setNewCase] = useState({ clientId: '', title: '', description: '', legalArea: '' });
   const [creating, setCreating] = useState(false);
 
   const fetchCases = async () => {
-    try {
-      const { data } = await api.get('/cases');
-      setCases(data.cases);
-    } catch (err) {
-      console.error('Failed to fetch cases:', err);
-    } finally {
-      setLoading(false);
-    }
+    try { const { data } = await api.get('/cases'); setCases(data.cases); }
+    catch {} finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCases(); }, []);
 
-  // Fetch client list when lawyer opens the create form
   const openCreateForm = async () => {
     try {
-      if (clients.length === 0) {
-        const { data } = await api.get('/users/clients');
-        setClients(data.clients);
-      }
+      if (clients.length === 0) { const { data } = await api.get('/users/clients'); setClients(data.clients); }
       setShowCreateForm(true);
-    } catch (err) {
-      alert('Failed to load client list');
-    }
+    } catch { alert('Failed to load client list'); }
   };
 
   const createCase = async () => {
-    if (!newCase.clientId || !newCase.title || !newCase.legalArea) {
-      alert('Please fill in Client, Title, and Legal Area');
-      return;
-    }
+    if (!newCase.clientId || !newCase.title || !newCase.legalArea) { alert('Please fill in Client, Title, and Legal Area'); return; }
     setCreating(true);
     try {
       await api.post('/cases', newCase);
       setNewCase({ clientId: '', title: '', description: '', legalArea: '' });
       setShowCreateForm(false);
       fetchCases();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create case');
-    } finally {
-      setCreating(false);
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to create case'); }
+    finally { setCreating(false); }
   };
 
   const loadCase = async (id) => {
-    try {
-      const { data } = await api.get(`/cases/${id}`);
-      setSelectedCase(data.case);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to load case');
-    }
+    try { const { data } = await api.get(`/cases/${id}`); setSelectedCase(data.case); }
+    catch (err) { alert(err.response?.data?.message || 'Failed to load case'); }
   };
 
   const addMilestone = async () => {
     if (!milestoneNote.trim()) return;
     try {
-      await api.put(`/cases/${selectedCase._id}/milestone`, {
-        note: milestoneNote,
-        stage: selectedCase.status
-      });
+      await api.put(`/cases/${selectedCase._id}/milestone`, { note: milestoneNote, stage: selectedCase.status });
       setMilestoneNote('');
       loadCase(selectedCase._id);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add milestone');
-    }
+    } catch (err) { alert(err.response?.data?.message || 'Failed to add milestone'); }
   };
 
   const advanceCase = async () => {
     const stages = ['intake', 'investigation', 'filing', 'hearing', 'resolution', 'closed'];
     const currentIdx = stages.indexOf(selectedCase.status);
     if (currentIdx >= stages.length - 1) return;
-
     const nextStage = stages[currentIdx + 1];
     if (window.confirm(`Advance case to "${nextStage}"?`)) {
       try {
         await api.put(`/cases/${selectedCase._id}/status`, { status: nextStage });
         loadCase(selectedCase._id);
-      } catch (err) {
-        alert(err.response?.data?.message || 'Failed to advance case');
-      }
+      } catch (err) { alert(err.response?.data?.message || 'Failed to advance case'); }
     }
   };
 
-  const STATUS_COLORS = {
-    intake: 'info', investigation: 'warning', filing: 'primary',
-    hearing: 'dark', resolution: 'success', closed: 'secondary'
-  };
-
   return (
-    <div className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold mb-0">Case Manager</h2>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'var(--font-serif)' }}>Case Manager</h1>
         {isLawyer && (
-          <button className="btn btn-primary" onClick={openCreateForm}>
-            + New Case
+          <button className="ll-btn ll-btn-primary" onClick={openCreateForm}>
+            <i className="bi bi-plus" /> New Case
           </button>
         )}
       </div>
@@ -122,103 +90,99 @@ const CaseManager = () => {
       {/* Create Case Form */}
       {showCreateForm && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="card border-0 shadow-sm mb-4" style={{ borderRadius: '12px' }}>
-          <div className="card-body">
-            <h5 className="fw-bold mb-3">Create New Case</h5>
-            <div className="row g-3">
-              <div className="col-md-6">
-                <label className="form-label">Client</label>
-                <select className="form-select" value={newCase.clientId}
-                        onChange={e => setNewCase({...newCase, clientId: e.target.value})}>
-                  <option value="">Select a client...</option>
-                  {clients.map(c => (
-                    <option key={c._id} value={c._id}>{c.name} ({c.email})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Legal Area</label>
-                <select className="form-select" value={newCase.legalArea}
-                        onChange={e => setNewCase({...newCase, legalArea: e.target.value})}>
-                  <option value="">Select area...</option>
-                  {LEGAL_AREAS.map(area => (
-                    <option key={area} value={area}>{area.charAt(0).toUpperCase() + area.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-12">
-                <label className="form-label">Case Title</label>
-                <input className="form-control" placeholder="e.g. Alimony Dispute - Kumar"
-                       value={newCase.title} onChange={e => setNewCase({...newCase, title: e.target.value})} />
-              </div>
-              <div className="col-12">
-                <label className="form-label">Description</label>
-                <textarea className="form-control" rows={2} placeholder="Brief case description..."
-                          value={newCase.description} onChange={e => setNewCase({...newCase, description: e.target.value})} />
-              </div>
-              <div className="col-12 d-flex gap-2">
-                <button className="btn btn-primary" onClick={createCase} disabled={creating}>
-                  {creating ? 'Creating...' : 'Create Case'}
-                </button>
-                <button className="btn btn-outline-secondary" onClick={() => setShowCreateForm(false)}>Cancel</button>
-              </div>
+                    className="ll-card" style={{ marginBottom: '24px' }}>
+          <h3 style={{ marginBottom: '20px' }}>Create New Case</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div>
+              <label className="ll-label">Client</label>
+              <select className="ll-select" value={newCase.clientId}
+                      onChange={e => setNewCase({...newCase, clientId: e.target.value})}>
+                <option value="">Select a client...</option>
+                {clients.map(c => <option key={c._id} value={c._id}>{c.name} ({c.email})</option>)}
+              </select>
             </div>
+            <div>
+              <label className="ll-label">Legal Area</label>
+              <select className="ll-select" value={newCase.legalArea}
+                      onChange={e => setNewCase({...newCase, legalArea: e.target.value})}>
+                <option value="">Select area...</option>
+                {LEGAL_AREAS.map(area => <option key={area} value={area}>{area.charAt(0).toUpperCase() + area.slice(1)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label className="ll-label">Case Title</label>
+            <input className="ll-input" placeholder="e.g. Alimony Dispute - Kumar"
+                   value={newCase.title} onChange={e => setNewCase({...newCase, title: e.target.value})} />
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label className="ll-label">Description</label>
+            <textarea className="ll-input" rows={2} placeholder="Brief case description..."
+                      value={newCase.description} onChange={e => setNewCase({...newCase, description: e.target.value})}
+                      style={{ resize: 'vertical' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="ll-btn ll-btn-primary" onClick={createCase} disabled={creating}>
+              {creating ? 'Creating...' : 'Create Case'}
+            </button>
+            <button className="ll-btn ll-btn-outline" onClick={() => setShowCreateForm(false)}>Cancel</button>
           </div>
         </motion.div>
       )}
 
-      <div className="row">
+      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
         {/* Case list */}
-        <div className="col-md-4">
-          {loading ? <div className="spinner-border" /> : cases.length === 0 ? (
-            <div className="text-center text-muted py-4">No cases yet.</div>
-          ) : cases.map(c => (
-            <motion.div key={c._id} whileHover={{ scale: 1.02 }}
-                        className={`card border-0 shadow-sm mb-2 ${selectedCase?._id === c._id ? 'border-primary border-2' : ''}`}
-                        style={{ cursor: 'pointer', borderRadius: '10px' }}
+        <div>
+          {loading ? <div className="ll-spinner"><div className="spinner-border" style={{ color: 'var(--accent)' }} /></div> :
+           cases.length === 0 ? (
+            <div className="ll-empty"><i className="bi bi-folder" /><p>No cases yet.</p></div>
+           ) : cases.map(c => (
+            <motion.div key={c._id} whileHover={{ scale: 1.01 }}
+                        className="ll-card" style={{
+                          cursor: 'pointer', marginBottom: '8px', padding: '14px 16px',
+                          borderColor: selectedCase?._id === c._id ? 'var(--accent)' : undefined
+                        }}
                         onClick={() => loadCase(c._id)}>
-              <div className="card-body py-2 px-3">
-                <div className="d-flex justify-content-between">
-                  <strong className="small">{c.title}</strong>
-                  <span className={`badge bg-${STATUS_COLORS[c.status]}`} style={{ fontSize: 10 }}>{c.status}</span>
-                </div>
-                <small className="text-muted">{c.caseNumber} · {c.legalArea}</small>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '0.85rem' }}>{c.title}</strong>
+                <span className={`ll-status ${STATUS_STYLES[c.status] || ''}`}>{c.status}</span>
               </div>
+              <small style={{ color: 'var(--text-muted)' }}>{c.caseNumber} · {c.legalArea}</small>
             </motion.div>
           ))}
         </div>
 
         {/* Case detail */}
-        <div className="col-md-8">
+        <div>
           {selectedCase ? (
-            <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-              <div className="card-body">
-                <h4 className="fw-bold">{selectedCase.title}</h4>
-                <p className="text-muted small">{selectedCase.caseNumber} · {selectedCase.legalArea}</p>
-                <p>{selectedCase.description}</p>
+            <div className="ll-card">
+              <h2>{selectedCase.title}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {selectedCase.caseNumber} · {selectedCase.legalArea}
+              </p>
+              <p style={{ color: 'var(--text-secondary)' }}>{selectedCase.description}</p>
 
-                <CaseTimeline currentStatus={selectedCase.status} milestones={selectedCase.milestones} />
+              <CaseTimeline currentStatus={selectedCase.status} milestones={selectedCase.milestones} />
 
-                {isLawyer && selectedCase.status !== 'closed' && (
-                  <div className="mt-4 pt-3 border-top">
-                    <div className="d-flex gap-2 mb-3">
-                      <input className="form-control" placeholder="Add milestone note..."
-                             value={milestoneNote} onChange={e => setMilestoneNote(e.target.value)} />
-                      <button className="btn btn-outline-primary" onClick={addMilestone}>Add</button>
-                    </div>
-                    <button className="btn btn-success" onClick={advanceCase}>
-                      Advance to Next Stage →
-                    </button>
+              {isLawyer && selectedCase.status !== 'closed' && (
+                <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                    <input className="ll-input" placeholder="Add milestone note..."
+                           value={milestoneNote} onChange={e => setMilestoneNote(e.target.value)} />
+                    <button className="ll-btn ll-btn-outline" onClick={addMilestone}>Add</button>
                   </div>
-                )}
-              </div>
+                  <button className="ll-btn ll-btn-primary" onClick={advanceCase}>
+                    Advance to Next Stage →
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-center text-muted py-5">Select a case to view details</div>
+            <div className="ll-empty"><i className="bi bi-folder2-open" /><p>Select a case to view details</p></div>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
