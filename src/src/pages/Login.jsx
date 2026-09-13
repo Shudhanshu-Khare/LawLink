@@ -84,16 +84,12 @@ const Login = () => {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* ── Left Content Area ── */
-        .login-left {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 60px 40px 60px clamp(48px, 6.8vw, 110px);
-          position: relative;
-          z-index: 2;
-          max-width: 600px;
+        /* ── LawLink Logo (kept at exact position) ── */
+        .login-logo-wrap {
+          position: absolute;
+          top: clamp(130px, 20vh, 190px);
+          left: clamp(48px, 6.8vw, 110px);
+          z-index: 10;
         }
 
         .login-logo {
@@ -112,7 +108,29 @@ const Login = () => {
           height: 2px;
           background: #141414;
           margin-top: 8px;
-          margin-bottom: clamp(48px, 8vh, 76px);
+        }
+
+        /* ── Main Centered Content Container with Equal Spacing ── */
+        .login-main-container {
+          width: 100%;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: space-evenly;
+          position: relative;
+          z-index: 2;
+          box-sizing: border-box;
+          padding: 60px 40px;
+        }
+
+        /* ── Text Block ── */
+        .login-text-block {
+          width: 100%;
+          max-width: 440px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          box-sizing: border-box;
         }
 
         .login-heading {
@@ -135,14 +153,13 @@ const Login = () => {
           font-weight: 400;
         }
 
-        /* ── Right Content Area ── */
-        .login-right {
+        /* ── Card Wrapper ── */
+        .login-card-wrapper {
+          width: 100%;
+          max-width: 415px;
           display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          padding: 40px clamp(32px, 8vw, 120px) 40px 20px;
-          position: relative;
-          z-index: 5;
+          justify-content: center;
+          box-sizing: border-box;
         }
 
         /* ── White Login Card ── */
@@ -408,181 +425,191 @@ const Login = () => {
           background: #2f4536;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 992px) {
           .login-page {
             flex-direction: column;
             background-size: cover;
             background-position: top center;
           }
-          .login-left {
-            padding: 40px 24px 20px;
+          .login-logo-wrap {
+            position: static;
+            padding: 40px 24px 0;
+            margin-bottom: 20px;
+          }
+          .login-main-container {
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 10px 24px 40px;
+            min-height: auto;
+            gap: 32px;
+          }
+          .login-text-block {
             max-width: 100%;
           }
-          .login-right {
-            width: 100%;
-            padding: 20px 24px 40px;
-            justify-content: center;
+          .login-card-wrapper {
+            max-width: 100%;
           }
           .login-card {
             max-width: 100%;
             min-width: unset;
           }
-          .login-logo-line {
-            margin-bottom: 32px;
-          }
         }
       `}</style>
 
       <div className="login-page">
-        {/* ══════ LEFT SIDE ══════ */}
-        <div className="login-left">
-          <div className="login-logo-wrap">
-            <span className="login-logo">LawLink</span>
-            <div className="login-logo-line" />
-          </div>
-
-          <h1 className="login-heading">
-            Your legal<br />work, in one<br />place.
-          </h1>
-
-          <p className="login-subtitle">
-            A full-stack legal workflow platform with consultations, case tracking, real-time chat, document generation, invoicing and deadline management.
-          </p>
+        {/* ══════ LawLink Logo (Exact Position Kept) ══════ */}
+        <div className="login-logo-wrap">
+          <span className="login-logo">LawLink</span>
+          <div className="login-logo-line" />
         </div>
 
-        {/* ══════ RIGHT SIDE ══════ */}
-        <div className="login-right">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="login-card"
-          >
-            <h2 className="login-card-title">Welcome to LawLink</h2>
-            <p className="login-card-sub">Sign in to continue</p>
+        {/* ══════ Centered Content with Equal Spacing ══════ */}
+        <div className="login-main-container">
+          {/* Text Block */}
+          <div className="login-text-block">
+            <h1 className="login-heading">
+              Your legal<br />work, in one<br />place.
+            </h1>
 
-            {error && <div className="login-error">{error}</div>}
+            <p className="login-subtitle">
+              A full-stack legal workflow platform with consultations, case tracking, real-time chat, document generation, invoicing and deadline management.
+            </p>
+          </div>
 
-            {/* Google Sign In — custom pill button matching reference */}
-            <button
-              type="button"
-              className="login-google-btn"
-              onClick={() => googleLogin()}
-              disabled={loading}
+          {/* Login Card */}
+          <div className="login-card-wrapper">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="login-card"
             >
-              <GoogleGIcon />
-              <span>{loading ? 'Signing in…' : 'Continue with Google'}</span>
-            </button>
+              <h2 className="login-card-title">Welcome to LawLink</h2>
+              <p className="login-card-sub">Sign in to continue</p>
 
-            {/* Divider */}
-            <div className="login-divider"><span>or</span></div>
+              {error && <div className="login-error">{error}</div>}
 
-            {/* More Options */}
-            <button
-              type="button"
-              className="login-more-btn"
-              onClick={() => setShowMore(!showMore)}
-            >
-              <span>More options</span>
-              <span
-                className="login-more-chevron"
-                style={{ transform: showMore ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              {/* Google Sign In — custom pill button matching reference */}
+              <button
+                type="button"
+                className="login-google-btn"
+                onClick={() => googleLogin()}
+                disabled={loading}
               >
-                ▼
-              </span>
-            </button>
+                <GoogleGIcon />
+                <span>{loading ? 'Signing in…' : 'Continue with Google'}</span>
+              </button>
 
-            {/* Dropdown */}
-            <AnimatePresence>
-              {showMore && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  style={{ overflow: 'hidden' }}
+              {/* Divider */}
+              <div className="login-divider"><span>or</span></div>
+
+              {/* More Options */}
+              <button
+                type="button"
+                className="login-more-btn"
+                onClick={() => setShowMore(!showMore)}
+              >
+                <span>More options</span>
+                <span
+                  className="login-more-chevron"
+                  style={{ transform: showMore ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
-                  <div className="ll-dropdown">
-                    <button
-                      type="button"
-                      className="ll-dropdown-item"
-                      onClick={() => setShowTestLogin(!showTestLogin)}
-                    >
-                      <div className="ll-dropdown-icon"><i className="bi bi-person" /></div>
-                      <div className="ll-dropdown-text">
-                        <h6>Log in with test account</h6>
-                        <p>Explore the platform</p>
+                  ▼
+                </span>
+              </button>
+
+              {/* Dropdown */}
+              <AnimatePresence>
+                {showMore && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="ll-dropdown">
+                      <button
+                        type="button"
+                        className="ll-dropdown-item"
+                        onClick={() => setShowTestLogin(!showTestLogin)}
+                      >
+                        <div className="ll-dropdown-icon"><i className="bi bi-person" /></div>
+                        <div className="ll-dropdown-text">
+                          <h6>Log in with test account</h6>
+                          <p>Explore the platform</p>
+                        </div>
+                      </button>
+                      <Link to="/register" className="ll-dropdown-item" style={{ textDecoration: 'none' }}>
+                        <div className="ll-dropdown-icon"><i className="bi bi-plus" /></div>
+                        <div className="ll-dropdown-text">
+                          <h6>Don't have an account?</h6>
+                          <p>Register now</p>
+                        </div>
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Test Account Form */}
+              <AnimatePresence>
+                {showTestLogin && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <form onSubmit={handleTestLogin} style={{ marginTop: '14px' }}>
+                      <div style={{ marginBottom: '10px' }}>
+                        <input
+                          type="email"
+                          placeholder="Email (e.g. rahul@example.com)"
+                          required
+                          className="login-test-input"
+                          value={formData.email}
+                          onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        />
                       </div>
-                    </button>
-                    <Link to="/register" className="ll-dropdown-item" style={{ textDecoration: 'none' }}>
-                      <div className="ll-dropdown-icon"><i className="bi bi-plus" /></div>
-                      <div className="ll-dropdown-text">
-                        <h6>Don't have an account?</h6>
-                        <p>Register now</p>
+                      <div style={{ marginBottom: '12px' }}>
+                        <input
+                          type="password"
+                          placeholder="Password"
+                          required
+                          className="login-test-input"
+                          value={formData.password}
+                          onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        />
                       </div>
-                    </Link>
+                      <button type="submit" disabled={loading} className="login-test-submit">
+                        {loading ? 'Signing in...' : 'Sign In'}
+                      </button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Watch Demo Button — per user request, link will be attached later */}
+              <button
+                type="button"
+                className="login-demo-btn"
+                onClick={() => {
+                  /* User will attach Google Drive link later */
+                }}
+              >
+                <div className="login-demo-play">
+                  <div className="login-demo-play-circle">
+                    <div className="login-demo-triangle" />
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Test Account Form */}
-            <AnimatePresence>
-              {showTestLogin && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  style={{ overflow: 'hidden' }}
-                >
-                  <form onSubmit={handleTestLogin} style={{ marginTop: '14px' }}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <input
-                        type="email"
-                        placeholder="Email (e.g. rahul@example.com)"
-                        required
-                        className="login-test-input"
-                        value={formData.email}
-                        onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      />
-                    </div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <input
-                        type="password"
-                        placeholder="Password"
-                        required
-                        className="login-test-input"
-                        value={formData.password}
-                        onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      />
-                    </div>
-                    <button type="submit" disabled={loading} className="login-test-submit">
-                      {loading ? 'Signing in...' : 'Sign In'}
-                    </button>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Watch Demo Button — per user request, link will be attached later */}
-            <button
-              type="button"
-              className="login-demo-btn"
-              onClick={() => {
-                /* User will attach Google Drive link later */
-              }}
-            >
-              <div className="login-demo-play">
-                <div className="login-demo-play-circle">
-                  <div className="login-demo-triangle" />
                 </div>
-              </div>
-              <div className="login-demo-divider" />
-              <div className="login-demo-text">
-                <span>Watch demo</span>
-                <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>→</span>
-              </div>
-            </button>
-          </motion.div>
+                <div className="login-demo-divider" />
+                <div className="login-demo-text">
+                  <span>Watch demo</span>
+                  <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>→</span>
+                </div>
+              </button>
+            </motion.div>
+          </div>
         </div>
       </div>
     </>
