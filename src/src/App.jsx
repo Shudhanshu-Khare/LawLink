@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+// src/src/App.jsx
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Pages
@@ -18,139 +19,161 @@ import DeadlineCalendar from './pages/DeadlineCalendar';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 
-
 // Protected route wrapper
 const ProtectedRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return <div className="text-center mt-5"><div className="spinner-border" /></div>;
+  if (loading) return (
+    <div className="ll-spinner"><div className="spinner-border" style={{ color: 'var(--accent)' }} /></div>
+  );
   if (!isAuthenticated) return <Navigate to="/login" />;
-  // Admin should only access admin routes — redirect away from everything else
   if (user.role === 'admin' && (!roles || !roles.includes('admin'))) return <Navigate to="/admin" />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
   return children;
 };
 
-// Dashboard — shows stats overview with navigation cards
-const Dashboard = () => {
-  const { user, isLawyer, isClient } = useAuth();
-
-  // Show verification pending banner for unverified users
-  const showVerificationBanner = user && !user.isVerified && user.role !== 'admin';
+// ── Top Bar (user info on the right) ──
+const TopBar = () => {
+  const { user } = useAuth();
+  if (!user) return null;
 
   return (
-    <div className="container py-5">
-      {showVerificationBanner && (
-        <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
-          <span style={{ fontSize: 24, marginRight: 12 }}>⏳</span>
-          <div>
-            <strong>Profile Pending Verification</strong>
-            <p className="mb-0 small">Your account is being reviewed by an admin. {user.role === 'client' ? 'You can browse lawyers but cannot book consultations or send messages until verified.' : 'Your profile will appear in Find Lawyers once verified.'}</p>
-          </div>
+    <div className="ll-topbar">
+      <div className="ll-topbar-user">
+        <div style={{ textAlign: 'right' }}>
+          <div className="ll-topbar-name">{user.name} ({user.role})</div>
         </div>
-      )}
-      <div className="mb-4">
-        <h2 className="fw-bold">Welcome, {user?.name}!</h2>
-        <p className="text-muted">Role: <span className="badge bg-primary">{user?.role}</span> · {user?.email}</p>
-      </div>
-
-      <div className="row g-3">
-        {isClient && (
-          <div className="col-md-4">
-            <a href="/lawyers" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-              <div className="card-body text-center py-4">
-                <div style={{ fontSize: 32 }}>🔍</div>
-                <h6 className="fw-bold mt-2 text-dark">Find Lawyers</h6>
-                <p className="text-muted small mb-0">Browse and book consultations</p>
-              </div>
-            </a>
-          </div>
-        )}
-        <div className="col-md-4">
-          <a href="/cases" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>📋</div>
-              <h6 className="fw-bold mt-2 text-dark">My Cases</h6>
-              <p className="text-muted small mb-0">Track case progress and milestones</p>
-            </div>
-          </a>
-        </div>
-        <div className="col-md-4">
-          <a href="/consultations" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>📅</div>
-              <h6 className="fw-bold mt-2 text-dark">Consultations</h6>
-              <p className="text-muted small mb-0">View and manage appointments</p>
-            </div>
-          </a>
-        </div>
-        <div className="col-md-4">
-          <a href="/chat" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>💬</div>
-              <h6 className="fw-bold mt-2 text-dark">Messages</h6>
-              <p className="text-muted small mb-0">Real-time chat with {isLawyer ? 'clients' : 'lawyers'}</p>
-            </div>
-          </a>
-        </div>
-        <div className="col-md-4">
-          <a href="/documents" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>📄</div>
-              <h6 className="fw-bold mt-2 text-dark">Documents</h6>
-              <p className="text-muted small mb-0">{isLawyer ? 'Create legal documents & PDFs' : 'View your legal documents'}</p>
-            </div>
-          </a>
-        </div>
-        <div className="col-md-4">
-          <a href="/invoices" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>💰</div>
-              <h6 className="fw-bold mt-2 text-dark">Invoices</h6>
-              <p className="text-muted small mb-0">{isLawyer ? 'Generate and track invoices' : 'View and pay invoices'}</p>
-            </div>
-          </a>
-        </div>
-        <div className="col-md-4">
-          <a href="/deadlines" className="card border-0 shadow-sm text-decoration-none h-100" style={{ borderRadius: '12px' }}>
-            <div className="card-body text-center py-4">
-              <div style={{ fontSize: 32 }}>⏰</div>
-              <h6 className="fw-bold mt-2 text-dark">Deadlines</h6>
-              <p className="text-muted small mb-0">Court dates and filing deadlines</p>
-            </div>
-          </a>
-        </div>
+        <Link to="/profile" className="ll-avatar" style={{ textDecoration: 'none' }}>
+          {user.name?.charAt(0).toUpperCase()}
+        </Link>
       </div>
     </div>
   );
 };
 
-function AppRoutes() {
-  const { isAuthenticated, user } = useAuth();
+// ── Dashboard Card ──
+const DashCard = ({ to, icon, title, desc }) => (
+  <Link to={to} className="ll-card ll-card-link">
+    <div className="ll-card-header">
+      <div>
+        <div className="ll-card-icon"><i className={`bi ${icon}`} /></div>
+        <div className="ll-card-title">{title}</div>
+        <p className="ll-card-desc">{desc}</p>
+      </div>
+      <span className="ll-card-arrow">→</span>
+    </div>
+  </Link>
+);
 
-  // Redirect helper — admin goes to /admin, others to /dashboard
-  const defaultRoute = isAuthenticated && user?.role === 'admin' ? '/admin' : '/dashboard';
+// ── Dashboard ──
+const Dashboard = () => {
+  const { user, isLawyer, isClient } = useAuth();
+  const showVerificationBanner = user && !user.isVerified && user.role !== 'admin';
+
+  const clientCards = [
+    { to: '/cases', icon: 'bi-folder', title: 'My Cases', desc: 'Track case progress and milestones.' },
+    { to: '/lawyers', icon: 'bi-search', title: 'Find Lawyers', desc: 'Browse and book consultations.' },
+    { to: '/consultations', icon: 'bi-calendar-check', title: 'Consultations', desc: 'View and manage appointments.' },
+    { to: '/documents', icon: 'bi-file-earmark-text', title: 'Documents', desc: 'View your legal documents.' },
+    { to: '/invoices', icon: 'bi-receipt', title: 'Invoices', desc: 'View and pay invoices.' },
+    { to: '/deadlines', icon: 'bi-clock', title: 'Deadlines', desc: 'Court dates and filing deadlines.' },
+  ];
+
+  const lawyerCards = [
+    { to: '/cases', icon: 'bi-folder', title: 'My Cases', desc: 'Track case progress and milestones.' },
+    { to: '/consultations', icon: 'bi-calendar-check', title: 'Consultations', desc: 'View and manage appointments.' },
+    { to: '/chat', icon: 'bi-chat-square', title: 'Messages', desc: 'Real-time chat with clients.' },
+    { to: '/documents', icon: 'bi-file-earmark-text', title: 'Documents', desc: 'Create and manage your legal documents.' },
+    { to: '/invoices', icon: 'bi-receipt', title: 'Invoices', desc: 'Generate and track invoices.' },
+    { to: '/deadlines', icon: 'bi-clock', title: 'Deadlines', desc: 'Court dates and filing deadlines.' },
+  ];
+
+  const cards = isLawyer ? lawyerCards : clientCards;
 
   return (
-    <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Login />} />
-      <Route path="/register" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Register />} />
+    <>
+      {showVerificationBanner && (
+        <div className="ll-alert ll-alert-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '1.2rem' }}>⏳</span>
+          <div>
+            <strong>Profile Pending Verification</strong>
+            <p style={{ margin: '2px 0 0', fontSize: '0.8rem' }}>
+              Your account is being reviewed by an admin.
+              {isClient ? ' You can browse lawyers but cannot book consultations until verified.' :
+                ' Your profile will appear in Find Lawyers once verified.'}
+            </p>
+          </div>
+        </div>
+      )}
 
+      <div className="ll-page-header">
+        <h1>Welcome back, {user?.name}!</h1>
+        <div className="ll-page-meta">
+          <span>Role: <span className="ll-badge">{user?.role}</span></span>
+          <span>|</span>
+          <span>{user?.email}</span>
+        </div>
+      </div>
 
-      <Route path="/lawyers" element={<LawyerDirectory />} />
+      <div className="ll-grid">
+        {cards.map(card => (
+          <DashCard key={card.to} {...card} />
+        ))}
+      </div>
+    </>
+  );
+};
 
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/book/:lawyerId" element={<ProtectedRoute roles={['client']}><BookConsultation /></ProtectedRoute>} />
-      <Route path="/consultations" element={<ProtectedRoute><ConsultationHub /></ProtectedRoute>} />
-      <Route path="/cases" element={<ProtectedRoute><CaseManager /></ProtectedRoute>} />
-      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-      <Route path="/documents" element={<ProtectedRoute><DocumentHub /></ProtectedRoute>} />
-      <Route path="/invoices" element={<ProtectedRoute><InvoiceManager /></ProtectedRoute>} />
-      <Route path="/deadlines" element={<ProtectedRoute><DeadlineCalendar /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+// ── Layout wrapper: Sidebar + TopBar + Content ──
+const AuthenticatedLayout = ({ children }) => (
+  <>
+    <Sidebar />
+    <div className="ll-main">
+      <TopBar />
+      {children}
+    </div>
+  </>
+);
 
-      <Route path="*" element={<Navigate to={isAuthenticated ? defaultRoute : "/login"} />} />
-    </Routes>
+function AppRoutes() {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  const defaultRoute = isAuthenticated && user?.role === 'admin' ? '/admin' : '/dashboard';
+
+  // Public pages (no sidebar)
+  const publicPaths = ['/login', '/register'];
+  const isPublicPage = publicPaths.some(p => location.pathname.startsWith(p));
+
+  // Lawyer Directory is special — public but optionally with sidebar
+  const isLawyerDir = location.pathname === '/lawyers' && !isAuthenticated;
+
+  if (isPublicPage || isLawyerDir) {
+    return (
+      <Routes>
+        <Route path="/login" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Login />} />
+        <Route path="/register" element={isAuthenticated ? <Navigate to={defaultRoute} /> : <Register />} />
+        <Route path="/lawyers" element={<LawyerDirectory />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <AuthenticatedLayout>
+      <Routes>
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/lawyers" element={<LawyerDirectory />} />
+        <Route path="/book/:lawyerId" element={<ProtectedRoute roles={['client']}><BookConsultation /></ProtectedRoute>} />
+        <Route path="/consultations" element={<ProtectedRoute><ConsultationHub /></ProtectedRoute>} />
+        <Route path="/cases" element={<ProtectedRoute><CaseManager /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/documents" element={<ProtectedRoute><DocumentHub /></ProtectedRoute>} />
+        <Route path="/invoices" element={<ProtectedRoute><InvoiceManager /></ProtectedRoute>} />
+        <Route path="/deadlines" element={<ProtectedRoute><DeadlineCalendar /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to={defaultRoute} />} />
+      </Routes>
+    </AuthenticatedLayout>
   );
 }
 
@@ -164,11 +187,9 @@ function App() {
   );
 }
 
-// Separate component so SocketProvider can access AuthContext
 function SocketProviderWrapper() {
   return (
     <SocketProvider>
-      <Navbar />
       <AppRoutes />
     </SocketProvider>
   );
