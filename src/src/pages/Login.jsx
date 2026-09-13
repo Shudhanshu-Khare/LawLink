@@ -59,11 +59,69 @@ const Login = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-page)',
+      background: '#f0ece6',
       display: 'flex',
-      alignItems: 'stretch'
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: "'Inter', sans-serif"
     }}>
-      {/* ── Left: Hero ── */}
+
+      {/* ── Dark green diagonal background shape (right side) ── */}
+      <div style={{
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        width: '45%',
+        height: '100%',
+        background: '#3a4a3c',
+        clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)',
+        zIndex: 0
+      }} />
+
+      {/* ── Marble texture overlay (top-right) ── */}
+      <div style={{
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        width: '22%',
+        height: '55%',
+        background: 'linear-gradient(145deg, #c5c0b8 0%, #9a9590 30%, #b5b0a8 60%, #8a8580 100%)',
+        opacity: 0.7,
+        zIndex: 1
+      }} />
+
+      {/* ── Large decorative circle (thin stroke) ── */}
+      <div style={{
+        position: 'absolute',
+        width: '550px',
+        height: '550px',
+        borderRadius: '50%',
+        border: '1px solid rgba(180, 175, 168, 0.5)',
+        left: '35%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 1,
+        pointerEvents: 'none'
+      }} />
+
+      {/* ── Justice Scale Image (left side) ── */}
+      <img
+        src="/assets/justice-scale.jpg"
+        alt=""
+        style={{
+          position: 'absolute',
+          left: '-40px',
+          top: '22%',
+          width: '220px',
+          height: 'auto',
+          opacity: 0.15,
+          zIndex: 1,
+          pointerEvents: 'none',
+          filter: 'contrast(1.2) brightness(0.3)'
+        }}
+      />
+
+      {/* ══════════ LEFT: Branding ══════════ */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -71,157 +129,167 @@ const Login = () => {
         justifyContent: 'center',
         padding: '60px 60px 60px 80px',
         position: 'relative',
-        overflow: 'hidden'
+        zIndex: 2
       }}>
         {/* Logo */}
-        <div style={{ marginBottom: '60px' }}>
+        <div style={{ marginBottom: '80px' }}>
           <span style={{
-            fontFamily: 'var(--font-serif)',
+            fontFamily: "'DM Serif Display', serif",
             fontStyle: 'italic',
-            fontSize: '1.75rem',
-            color: 'var(--text-primary)',
+            fontSize: '2rem',
+            color: '#1a1a1a',
             display: 'block',
-            marginBottom: '8px'
+            marginBottom: '12px',
+            letterSpacing: '-0.5px'
           }}>LawLink</span>
           <div style={{
-            width: '32px',
-            height: '2px',
-            background: 'var(--text-primary)'
+            width: '36px',
+            height: '2.5px',
+            background: '#1a1a1a'
           }} />
         </div>
 
-        {/* Heading */}
+        {/* Hero heading */}
         <h1 style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: '3.5rem',
-          lineHeight: 1.1,
-          color: 'var(--text-primary)',
-          marginBottom: '24px',
-          maxWidth: '420px'
+          fontFamily: "'DM Serif Display', serif",
+          fontSize: 'clamp(2.8rem, 4.5vw, 4rem)',
+          lineHeight: 1.05,
+          color: '#1a1a1a',
+          marginBottom: '28px',
+          maxWidth: '440px',
+          fontWeight: 400,
+          letterSpacing: '-1px'
         }}>
           Your legal<br />work, in one<br />place.
         </h1>
 
-        {/* Description */}
+        {/* Subtitle */}
         <p style={{
-          fontSize: '1rem',
-          color: 'var(--text-secondary)',
+          fontSize: '0.95rem',
+          color: '#6b6560',
           lineHeight: 1.7,
-          maxWidth: '380px'
+          maxWidth: '380px',
+          fontWeight: 400
         }}>
           A full-stack legal workflow platform with consultations, case tracking, real-time chat, document generation, invoicing and deadline management.
         </p>
-
-        {/* Decorative scale image — subtle */}
-        <div style={{
-          position: 'absolute',
-          left: '10px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          opacity: 0.06,
-          fontSize: '18rem',
-          color: 'var(--text-primary)',
-          pointerEvents: 'none',
-          zIndex: 0
-        }}>
-          ⚖️
-        </div>
       </div>
 
-      {/* ── Right: Login Card ── */}
+      {/* ══════════ RIGHT: Login Card ══════════ */}
       <div style={{
-        width: '480px',
+        width: '500px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '40px',
-        position: 'relative'
+        position: 'relative',
+        zIndex: 5
       }}>
-        {/* Decorative circle */}
-        <div style={{
-          position: 'absolute',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          border: '1px solid var(--border)',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          opacity: 0.5,
-          pointerEvents: 'none'
-        }} />
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.5 }}
           style={{
-            background: 'rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '40px 36px',
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            borderRadius: '16px',
+            padding: '44px 40px',
             width: '100%',
-            maxWidth: '380px',
-            boxShadow: '0 4px 30px rgba(0,0,0,0.06)',
-            position: 'relative',
-            zIndex: 1
+            maxWidth: '400px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+            position: 'relative'
           }}
         >
+          {/* Card heading */}
           <h2 style={{
-            fontFamily: 'var(--font-serif)',
+            fontFamily: "'DM Serif Display', serif",
             textAlign: 'center',
             marginBottom: '4px',
-            fontSize: '1.75rem'
+            fontSize: '1.65rem',
+            fontWeight: 400,
+            color: '#1a1a1a',
+            letterSpacing: '-0.5px'
           }}>Welcome to LawLink</h2>
           <p style={{
             textAlign: 'center',
-            color: 'var(--text-secondary)',
-            fontSize: '0.9rem',
+            color: '#8a8580',
+            fontSize: '0.85rem',
             marginBottom: '28px'
           }}>Sign in to continue</p>
 
+          {/* Error */}
           {error && (
-            <div className="ll-alert ll-alert-error">{error}</div>
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}>{error}</div>
           )}
 
-          {/* Google Sign In */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google sign-in failed')}
-              text="continue_with"
-              shape="rectangular"
-              size="large"
-              width="308"
-            />
+          {/* Google Sign In — styled to match image */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{
+              background: 'rgba(240, 236, 230, 0.6)',
+              borderRadius: '28px',
+              padding: '3px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google sign-in failed')}
+                text="continue_with"
+                shape="pill"
+                size="large"
+                width="320"
+              />
+            </div>
           </div>
 
-          {/* Divider */}
-          <div className="ll-divider">or</div>
+          {/* Divider — "or" with lines */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            margin: '20px 0',
+            color: '#b5b0a8',
+            fontSize: '0.8rem'
+          }}>
+            <div style={{ flex: 1, height: '1px', background: '#ddd8d2' }} />
+            <span>or</span>
+            <div style={{ flex: 1, height: '1px', background: '#ddd8d2' }} />
+          </div>
 
-          {/* More Options Toggle */}
+          {/* More Options button */}
           <button
             onClick={() => setShowMore(!showMore)}
             style={{
               width: '100%',
-              padding: '12px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--font-sans)',
-              fontSize: '0.9rem',
-              color: 'var(--text-primary)',
+              padding: '13px 20px',
+              background: '#ffffff',
+              border: '1px solid #ddd8d2',
+              borderRadius: '10px',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '0.88rem',
+              color: '#1a1a1a',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              fontWeight: 500
             }}
           >
             More options
             <i className={`bi bi-chevron-${showMore ? 'up' : 'down'}`}
-               style={{ fontSize: '0.75rem' }} />
+               style={{ fontSize: '0.7rem' }} />
           </button>
 
           {/* Dropdown */}
@@ -276,7 +344,12 @@ const Login = () => {
                   <div style={{ marginBottom: '10px' }}>
                     <input
                       type="email" placeholder="Email" required
-                      className="ll-input"
+                      style={{
+                        width: '100%', padding: '11px 14px', borderRadius: '8px',
+                        border: '1px solid #ddd8d2', fontSize: '0.85rem',
+                        fontFamily: "'Inter', sans-serif", outline: 'none',
+                        background: '#faf9f7', boxSizing: 'border-box'
+                      }}
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
                     />
@@ -284,13 +357,23 @@ const Login = () => {
                   <div style={{ marginBottom: '12px' }}>
                     <input
                       type="password" placeholder="Password" required
-                      className="ll-input"
+                      style={{
+                        width: '100%', padding: '11px 14px', borderRadius: '8px',
+                        border: '1px solid #ddd8d2', fontSize: '0.85rem',
+                        fontFamily: "'Inter', sans-serif", outline: 'none',
+                        background: '#faf9f7', boxSizing: 'border-box'
+                      }}
                       value={formData.password}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
                     />
                   </div>
-                  <button type="submit" className="ll-btn ll-btn-primary" disabled={loading}
-                          style={{ width: '100%', justifyContent: 'center' }}>
+                  <button type="submit" disabled={loading}
+                    style={{
+                      width: '100%', padding: '12px', background: '#3a4a3c',
+                      color: '#fff', border: 'none', borderRadius: '8px',
+                      fontSize: '0.88rem', fontWeight: 500, cursor: 'pointer',
+                      fontFamily: "'Inter', sans-serif"
+                    }}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </button>
                 </form>
@@ -298,21 +381,62 @@ const Login = () => {
             )}
           </AnimatePresence>
 
-          {/* Watch Demo */}
+          {/* Watch Demo Button — exact match to image */}
           <div style={{ marginTop: '20px' }}>
-            <button className="ll-btn ll-btn-primary ll-btn-lg"
-                    style={{
-                      width: '100%',
-                      justifyContent: 'center',
-                      background: 'var(--accent)',
-                      borderRadius: 'var(--radius-sm)',
-                      gap: '12px'
-                    }}
-                    onClick={() => window.open('https://lawlink-app.vercel.app/lawyers', '_blank')}
+            <button
+              style={{
+                width: '100%',
+                padding: '0',
+                background: '#3a4a3c',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                overflow: 'hidden',
+                height: '50px'
+              }}
+              onClick={() => {/* User will add Google Drive link later */}}
             >
-              <i className="bi bi-play-circle-fill" style={{ fontSize: '1.25rem' }} />
-              <span>Watch demo</span>
-              <span style={{ marginLeft: 'auto' }}>→</span>
+              {/* Play circle icon */}
+              <div style={{
+                width: '50px',
+                height: '50px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.9)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <span style={{ color: '#fff', fontSize: '0.7rem', marginLeft: '2px' }}>▶</span>
+                </div>
+              </div>
+              {/* Vertical divider */}
+              <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.25)' }} />
+              {/* Text */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                color: '#fff',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.88rem',
+                fontWeight: 500,
+                paddingRight: '16px'
+              }}>
+                <span>Watch demo</span>
+                <span style={{ fontSize: '1rem' }}>→</span>
+              </div>
             </button>
           </div>
         </motion.div>
