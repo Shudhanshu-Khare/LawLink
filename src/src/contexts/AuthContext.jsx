@@ -1,71 +1,109 @@
 // src/src/contexts/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
-import api, { startKeepalive, stopKeepalive } from '../services/api';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api, { startKeepalive, stopKeepalive, isSessionExpired, touchActivity } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [serverWaking, setServerWaking] = useState(false);
   // socketToken is only used for socket.io auth (received from login response)
   const [socketToken, setSocketToken] = useState(localStorage.getItem('socketToken'));
 
   useEffect(() => {
     const loadUser = async () => {
       // If user explicitly logged out, don't even try /auth/me
-      // (the httpOnly cookie might still exist because it can't be cleared from JS)
       if (localStorage.getItem('loggedOut') === 'true') {
         setUser(null);
         setLoading(false);
         return;
       }
 
+      // Check if session expired due to inactivity (15 min)
+      if (isSessionExpired()) {
+        setUser(null);
+        setSocketToken(null);
+        localStorage.setItem('loggedOut', 'true');
+        localStorage.removeItem('socketToken');
+        localStorage.removeItem('lastActivity');
+        setLoading(false);
+        return;
+      }
+
       try {
+        // Show "server starting" if response takes >4s
+        const wakeTimer = setTimeout(() => setServerWaking(true), 4000);
+
         // Cookie is sent automatically — if valid, we get user data
         const { data } = await api.get('/auth/me');
+        clearTimeout(wakeTimer);
+        setServerWaking(false);
         setUser(data.user);
+        touchActivity(); // Mark as active
         startKeepalive(); // User is authenticated — keep server alive
       } catch (err) {
+        setServerWaking(false);
         // Only clear session if backend explicitly rejects auth (401)
-        // Network errors (Render cold start, timeout, 502) should NOT log user out
         if (err.response && err.response.status === 401) {
           setUser(null);
           setSocketToken(null);
           localStorage.removeItem('socketToken');
         }
-        // For non-401 errors: keep existing user state (may be null on first load)
       }
       setLoading(false);
     };
     loadUser();
   }, []);
 
+  // Track user activity (clicks, keypresses, touches) to keep session alive
+  useEffect(() => {
+    if (!user) return;
+
+    const handleActivity = () => touchActivity();
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+
+    // Periodically check if session expired (every 60s)
+    const expiryCheck = setInterval(() => {
+      if (isSessionExpired()) {
+        logout();
+        window.location.href = '/login';
+      }
+    }, 60 * 1000);
+
+    return () => {
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      clearInterval(expiryCheck);
+    };
+  }, [user]);
+
   const login = (tokenValue, userData) => {
-    // JWT is already set as httpOnly cookie by the server
-    // We only store the token for socket.io auth (can't send cookies over WebSocket)
     localStorage.setItem('socketToken', tokenValue);
-    localStorage.removeItem('loggedOut');  // Clear the logout flag
+    localStorage.removeItem('loggedOut');
+    touchActivity(); // Mark session start
     setSocketToken(tokenValue);
     setUser(userData);
-    startKeepalive(); // Start pinging server while user is logged in
+    startKeepalive();
   };
 
-  const logout = async () => {
-    // Mark as explicitly logged out BEFORE anything else
-    // This prevents /auth/me from restoring the session even if the cookie persists
+  const logout = useCallback(async () => {
     localStorage.setItem('loggedOut', 'true');
     localStorage.removeItem('socketToken');
+    localStorage.removeItem('lastActivity');
     setSocketToken(null);
     setUser(null);
-    stopKeepalive(); // Stop pinging — server can sleep if nobody else is logged in
+    stopKeepalive();
 
-    // Then clear server-side cookie (best-effort, non-blocking)
     try {
       await api.post('/auth/logout');
     } catch (err) {
       // Ignore — the loggedOut flag ensures we won't auto-login on refresh
     }
-  };
+  }, []);
 
   const updateUser = (updatedData) => {
     setUser(prev => ({ ...prev, ...updatedData }));
@@ -76,6 +114,7 @@ export const AuthProvider = ({ children }) => {
       user,
       socketToken,
       loading,
+      serverWaking,
       login,
       logout,
       updateUser,
@@ -94,3 +133,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
+

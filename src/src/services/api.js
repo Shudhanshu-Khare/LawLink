@@ -2,6 +2,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -12,12 +13,25 @@ const api = axios.create({
   timeout: 60000          // 60s timeout (Render cold start can take up to 60s)
 });
 
-// Attach Bearer token as fallback for cross-domain (cookies may be blocked)
+// Track user activity for session timeout
+export const touchActivity = () => {
+  localStorage.setItem('lastActivity', Date.now().toString());
+};
+
+export const isSessionExpired = () => {
+  const last = localStorage.getItem('lastActivity');
+  if (!last) return false; // No activity recorded yet (first visit)
+  return (Date.now() - parseInt(last, 10)) > SESSION_TIMEOUT_MS;
+};
+
+// Attach Bearer token + update activity on every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('socketToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Every API call = user is active
+  touchActivity();
   return config;
 });
 

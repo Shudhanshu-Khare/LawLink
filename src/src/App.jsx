@@ -187,9 +187,36 @@ function App() {
   );
 }
 
+// ── Server Cold Start Overlay ──
+const ServerWakingOverlay = () => {
+  const { serverWaking } = useAuth();
+  if (!serverWaking) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(240, 236, 230, 0.95)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: '20px'
+    }}>
+      <div className="spinner-border" style={{ color: 'var(--accent)', width: '40px', height: '40px' }} />
+      <div style={{ textAlign: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-serif)', color: 'var(--text-primary)', marginBottom: '8px' }}>
+          Starting server...
+        </h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+          The server is waking up. This may take a few seconds.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 function SocketProviderWrapper() {
   return (
     <SocketProvider>
+      <ServerWakingOverlay />
       <AppRoutes />
     </SocketProvider>
   );
