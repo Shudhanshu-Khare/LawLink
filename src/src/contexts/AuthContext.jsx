@@ -67,12 +67,21 @@ export const AuthProvider = ({ children }) => {
     window.addEventListener('scroll', handleActivity, true);
     window.addEventListener('mousemove', handleActivity);
 
+    // Check every 5 min: if idle for 20 min → auto-logout
+    const expiryCheck = setInterval(() => {
+      if (isSessionExpired()) {
+        logout();
+        window.location.href = '/login';
+      }
+    }, 5 * 60 * 1000);
+
     return () => {
       window.removeEventListener('click', handleActivity);
       window.removeEventListener('keydown', handleActivity);
       window.removeEventListener('touchstart', handleActivity);
       window.removeEventListener('scroll', handleActivity, true);
       window.removeEventListener('mousemove', handleActivity);
+      clearInterval(expiryCheck);
     };
   }, [user]);
 

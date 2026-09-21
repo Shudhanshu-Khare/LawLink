@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const SESSION_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
 const api = axios.create({
   baseURL: API_BASE_URL,
