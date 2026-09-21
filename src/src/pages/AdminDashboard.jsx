@@ -98,6 +98,7 @@ const AdminDashboard = () => {
 
   const UserTable = ({ users, showRole = false }) => (
     <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="ll-table-wrap">
       <table className="ll-table">
         <thead>
           <tr>
@@ -136,6 +137,7 @@ const AdminDashboard = () => {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 

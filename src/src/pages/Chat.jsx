@@ -120,142 +120,203 @@ const Chat = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', height: 'calc(100vh - 120px)', gap: 0 }}>
-      {/* Conversation sidebar */}
-      <div style={{ borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--bg-card)', borderRadius: 'var(--radius-md) 0 0 var(--radius-md)' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
-          <h3 style={{ margin: 0 }}>Messages</h3>
-        </div>
-        {conversations.length === 0 ? (
-          <div className="ll-empty" style={{ padding: '32px 16px' }}>
-            <i className="bi bi-chat-square" />
-            <p style={{ fontSize: '0.85rem' }}>No conversations yet.</p>
-          </div>
-        ) : conversations.map(conv => {
-          const other = getOtherUser(conv);
-          const isOnline = onlineUsers.includes(other?._id);
-          const isActive = activeConv?._id === conv._id;
-          return (
-            <div key={conv._id}
-                 style={{
-                   display: 'flex', alignItems: 'center', padding: '14px 20px', gap: '12px',
-                   cursor: 'pointer', borderBottom: '1px solid var(--accent-light)',
-                   background: isActive ? 'var(--accent-light)' : 'transparent',
-                   transition: 'background 0.1s'
-                 }}
-                 onClick={() => setActiveConv(conv)}>
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div className="ll-avatar" style={{ width: 40, height: 40 }}>
-                  {other?.name?.charAt(0).toUpperCase()}
-                </div>
-                {isOnline && (
-                  <span style={{
-                    position: 'absolute', bottom: 0, right: 0, width: 10, height: 10,
-                    borderRadius: '50%', background: '#22c55e', border: '2px solid var(--bg-card)'
-                  }} />
-                )}
-              </div>
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ fontSize: '0.85rem' }}>{other?.name}</strong>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {conv.unreadCount > 0 && (
-                      <span style={{
-                        background: 'var(--accent)', color: '#fff', borderRadius: '10px',
-                        padding: '1px 8px', fontSize: '0.7rem', fontWeight: 600
-                      }}>{conv.unreadCount}</span>
-                    )}
-                    <button style={{ border: 'none', background: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', padding: 0 }}
-                            title="Delete chat"
-                            onClick={(e) => handleDeleteChat(conv._id, other?.name, e)}>✕</button>
-                  </div>
-                </div>
-                <small style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                  {conv.lastMessage?.content || 'Start a conversation'}
-                </small>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <>
+      <style>{`
+        .chat-grid {
+          display: grid;
+          grid-template-columns: 320px 1fr;
+          height: calc(100vh - 120px);
+          gap: 0;
+        }
+        .chat-sidebar {
+          border-right: 1px solid var(--border);
+          overflow-y: auto;
+          background: var(--bg-card);
+          border-radius: var(--radius-md) 0 0 var(--radius-md);
+        }
+        .chat-main {
+          display: flex;
+          flex-direction: column;
+          background: var(--bg-card);
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        }
+        .chat-back-btn {
+          display: none;
+          border: none;
+          background: none;
+          cursor: pointer;
+          color: var(--text-secondary);
+          font-size: 1.1rem;
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+        }
+        .chat-back-btn:hover {
+          background: var(--accent-light);
+        }
+        @media (max-width: 768px) {
+          .chat-grid {
+            grid-template-columns: 1fr;
+            height: calc(100vh - 80px);
+          }
+          .chat-sidebar {
+            border-right: none;
+            border-radius: var(--radius-md);
+          }
+          .chat-main {
+            border-radius: var(--radius-md);
+          }
+          .chat-grid.has-active .chat-sidebar {
+            display: none;
+          }
+          .chat-grid:not(.has-active) .chat-main {
+            display: none;
+          }
+          .chat-back-btn {
+            display: inline-flex;
+          }
+        }
+      `}</style>
 
-      {/* Chat area */}
-      <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-card)', borderRadius: '0 var(--radius-md) var(--radius-md) 0' }}>
-        {activeConv ? (
-          <>
-            {/* Header */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="ll-avatar" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
-                  {getOtherUser(activeConv)?.name?.charAt(0)}
-                </div>
-                <div>
-                  <strong style={{ fontSize: '0.9rem' }}>{getOtherUser(activeConv)?.name}</strong>
-                  {onlineUsers.includes(getOtherUser(activeConv)?._id) && (
-                    <small style={{ color: 'var(--success)', marginLeft: '8px' }}>● Online</small>
+      <div className={`chat-grid ${activeConv ? 'has-active' : ''}`}>
+        {/* Conversation sidebar */}
+        <div className="chat-sidebar">
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
+            <h3 style={{ margin: 0 }}>Messages</h3>
+          </div>
+          {conversations.length === 0 ? (
+            <div className="ll-empty" style={{ padding: '32px 16px' }}>
+              <i className="bi bi-chat-square" />
+              <p style={{ fontSize: '0.85rem' }}>No conversations yet.</p>
+            </div>
+          ) : conversations.map(conv => {
+            const other = getOtherUser(conv);
+            const isOnline = onlineUsers.includes(other?._id);
+            const isActive = activeConv?._id === conv._id;
+            return (
+              <div key={conv._id}
+                   style={{
+                     display: 'flex', alignItems: 'center', padding: '14px 20px', gap: '12px',
+                     cursor: 'pointer', borderBottom: '1px solid var(--accent-light)',
+                     background: isActive ? 'var(--accent-light)' : 'transparent',
+                     transition: 'background 0.1s'
+                   }}
+                   onClick={() => setActiveConv(conv)}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div className="ll-avatar" style={{ width: 40, height: 40 }}>
+                    {other?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  {isOnline && (
+                    <span style={{
+                      position: 'absolute', bottom: 0, right: 0, width: 10, height: 10,
+                      borderRadius: '50%', background: '#22c55e', border: '2px solid var(--bg-card)'
+                    }} />
                   )}
                 </div>
-              </div>
-              <button className="ll-btn ll-btn-sm ll-btn-ghost" style={{ color: 'var(--danger)' }}
-                      onClick={(e) => handleDeleteChat(activeConv._id, getOtherUser(activeConv)?.name, e)}>
-                <i className="bi bi-trash" /> Delete
-              </button>
-            </div>
-
-            {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-              {hasMore && (
-                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                  <button className="ll-btn ll-btn-sm ll-btn-outline"
-                          onClick={() => loadMessages(activeConv._id, messages[0]?.createdAt)}
-                          disabled={loadingMsgs}>Load older</button>
-                </div>
-              )}
-              {messages.map((msg, i) => {
-                const isMine = msg.sender._id === user._id;
-                return (
-                  <motion.div key={msg._id || i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                              style={{ display: 'flex', marginBottom: '8px', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-                    <div style={{
-                      padding: '10px 16px', borderRadius: '16px', maxWidth: '70%',
-                      background: isMine ? 'var(--accent)' : 'var(--accent-light)',
-                      color: isMine ? '#fff' : 'var(--text-primary)'
-                    }}>
-                      <div style={{ fontSize: '0.875rem' }}>{msg.content}</div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                        <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {isMine && <span style={{ fontSize: '0.65rem' }}>{getStatusIcon(msg.status)}</span>}
-                      </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>{other?.name}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {conv.unreadCount > 0 && (
+                        <span style={{
+                          background: 'var(--accent)', color: '#fff', borderRadius: '10px',
+                          padding: '1px 8px', fontSize: '0.7rem', fontWeight: 600
+                        }}>{conv.unreadCount}</span>
+                      )}
+                      <button style={{ border: 'none', background: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', padding: 0 }}
+                              title="Delete chat"
+                              onClick={(e) => handleDeleteChat(conv._id, other?.name, e)}>✕</button>
                     </div>
-                  </motion.div>
-                );
-              })}
-              {typing && <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>typing...</div>}
-              <div ref={messagesEndRef} />
-            </div>
+                  </div>
+                  <small style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                    {conv.lastMessage?.content || 'Start a conversation'}
+                  </small>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-            {/* Input */}
-            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <input className="ll-input" type="text" placeholder="Type a message..." maxLength={2000}
-                       value={newMsg} onChange={handleTyping}
-                       onKeyDown={e => e.key === 'Enter' && sendMessage()} />
-                <button className="ll-btn ll-btn-primary" onClick={sendMessage}>
-                  <i className="bi bi-send" />
+        {/* Chat area */}
+        <div className="chat-main">
+          {activeConv ? (
+            <>
+              {/* Header */}
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button className="chat-back-btn" onClick={() => setActiveConv(null)}>
+                    <i className="bi bi-arrow-left" />
+                  </button>
+                  <div className="ll-avatar" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
+                    {getOtherUser(activeConv)?.name?.charAt(0)}
+                  </div>
+                  <div>
+                    <strong style={{ fontSize: '0.9rem' }}>{getOtherUser(activeConv)?.name}</strong>
+                    {onlineUsers.includes(getOtherUser(activeConv)?._id) && (
+                      <small style={{ color: 'var(--success)', marginLeft: '8px' }}>● Online</small>
+                    )}
+                  </div>
+                </div>
+                <button className="ll-btn ll-btn-sm ll-btn-ghost" style={{ color: 'var(--danger)' }}
+                        onClick={(e) => handleDeleteChat(activeConv._id, getOtherUser(activeConv)?.name, e)}>
+                  <i className="bi bi-trash" /> Delete
                 </button>
               </div>
+
+              {/* Messages */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+                {hasMore && (
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <button className="ll-btn ll-btn-sm ll-btn-outline"
+                            onClick={() => loadMessages(activeConv._id, messages[0]?.createdAt)}
+                            disabled={loadingMsgs}>Load older</button>
+                  </div>
+                )}
+                {messages.map((msg, i) => {
+                  const isMine = msg.sender._id === user._id;
+                  return (
+                    <motion.div key={msg._id || i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                                style={{ display: 'flex', marginBottom: '8px', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                      <div style={{
+                        padding: '10px 16px', borderRadius: '16px', maxWidth: '70%',
+                        background: isMine ? 'var(--accent)' : 'var(--accent-light)',
+                        color: isMine ? '#fff' : 'var(--text-primary)'
+                      }}>
+                        <div style={{ fontSize: '0.875rem' }}>{msg.content}</div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {isMine && <span style={{ fontSize: '0.65rem' }}>{getStatusIcon(msg.status)}</span>}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+                {typing && <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>typing...</div>}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input className="ll-input" type="text" placeholder="Type a message..." maxLength={2000}
+                         value={newMsg} onChange={handleTyping}
+                         onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+                  <button className="ll-btn ll-btn-primary" onClick={sendMessage}>
+                    <i className="bi bi-send" />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="ll-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <i className="bi bi-chat-square-text" />
+              <p>Select a conversation to start chatting</p>
             </div>
-          </>
-        ) : (
-          <div className="ll-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <i className="bi bi-chat-square-text" />
-            <p>Select a conversation to start chatting</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

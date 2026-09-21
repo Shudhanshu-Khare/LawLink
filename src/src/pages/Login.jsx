@@ -464,6 +464,51 @@ const Login = () => {
             min-width: unset;
           }
         }
+
+        @media (max-width: 576px) {
+          .login-page {
+            background-position: center;
+          }
+          .login-logo-wrap {
+            padding: 36px 0 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .login-text-block {
+            display: none;
+          }
+          .login-main-container {
+            padding: 10px 16px 32px;
+            justify-content: center;
+            gap: 0;
+          }
+          .login-card {
+            padding: 32px 24px 28px;
+            border-radius: 14px;
+            max-height: min(520px, 75vh);
+          }
+          .login-card-title {
+            font-size: 1.4rem;
+          }
+          .login-card-sub {
+            font-size: 0.78rem;
+            margin-bottom: 20px;
+          }
+          .login-google-btn {
+            min-height: 44px;
+          }
+          .login-test-input {
+            min-height: 44px;
+          }
+          .login-test-submit {
+            min-height: 44px;
+          }
+          .login-demo-btn {
+            min-height: 44px;
+          }
+        }
       `}</style>
 
       <div className="login-page">

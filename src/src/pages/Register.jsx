@@ -478,6 +478,47 @@ const Register = () => {
             min-width: unset;
           }
         }
+
+        @media (max-width: 576px) {
+          .register-page {
+            background-position: center;
+          }
+          .register-logo-wrap {
+            padding: 36px 0 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .register-text-block {
+            display: none;
+          }
+          .register-main-container {
+            padding: 10px 16px 32px;
+            justify-content: center;
+            gap: 0;
+          }
+          .register-card {
+            padding: 32px 24px 28px;
+            border-radius: 14px;
+          }
+          .register-card-title {
+            font-size: 1.4rem;
+          }
+          .register-card-sub {
+            font-size: 0.78rem;
+            margin-bottom: 20px;
+          }
+          .register-google-btn {
+            min-height: 44px;
+          }
+          .register-input {
+            min-height: 44px;
+          }
+          .register-submit-btn {
+            min-height: 44px;
+          }
+        }
       `}</style>
 
       <div className="register-page">
