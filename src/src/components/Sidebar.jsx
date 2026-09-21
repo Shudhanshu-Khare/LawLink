@@ -1,5 +1,5 @@
 // src/src/components/Sidebar.jsx
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import api from '../services/api';
@@ -7,7 +7,6 @@ import api from '../services/api';
 const Sidebar = () => {
   const { user, logout: authLogout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -47,7 +46,6 @@ const Sidebar = () => {
     : user?.role === 'lawyer' ? lawyerNav
     : clientNav;
 
-  const homePath = user?.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
     <>
