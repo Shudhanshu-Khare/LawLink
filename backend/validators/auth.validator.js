@@ -21,9 +21,15 @@ const loginRules = [
   validate
 ];
 
-// Google auth validation
+// Google auth validation — accepts credential, access_token, or code
 const googleAuthRules = [
-  body('credential').notEmpty().withMessage('Google credential is required'),
+  body().custom((_, { req }) => {
+    const { credential, access_token, code } = req.body;
+    if (!credential && !access_token && !code) {
+      throw new Error('Google credential, access_token, or authorization code is required');
+    }
+    return true;
+  }),
   validate
 ];
 

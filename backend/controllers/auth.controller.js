@@ -74,12 +74,14 @@ exports.login = async (req, res) => {
 
 /**
  * POST /api/auth/google
- * Accepts { credential, mode } where mode is 'login' or 'register'.
- * Login: only allows existing users. Register: only allows new users.
+ * Accepts { credential | access_token | code, mode } where mode is 'login' or 'register'.
+ * - credential: ID token from <GoogleLogin> component
+ * - access_token: from useGoogleLogin implicit flow
+ * - code: authorization code from useGoogleLogin auth-code flow
  */
 exports.googleAuth = async (req, res) => {
   try {
-    const { credential, code, mode } = req.body;
+    const { credential, access_token, code, mode } = req.body;
 
     let googleId, email, name;
 
