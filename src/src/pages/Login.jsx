@@ -173,11 +173,16 @@ const Login = () => {
           width: 100%;
           min-width: 360px;
           max-width: 415px;
-          max-height: 85vh;
+          max-height: min(580px, 80vh);
           overflow-y: auto;
           box-shadow: 0 16px 44px -8px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.02);
           box-sizing: border-box;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(0,0,0,0.12) transparent;
         }
+        .login-card::-webkit-scrollbar { width: 4px; }
+        .login-card::-webkit-scrollbar-track { background: transparent; }
+        .login-card::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
 
         .login-card-title {
           font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
