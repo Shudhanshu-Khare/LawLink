@@ -173,6 +173,8 @@ const Login = () => {
           width: 100%;
           min-width: 360px;
           max-width: 415px;
+          max-height: 85vh;
+          overflow-y: auto;
           box-shadow: 0 16px 44px -8px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.02);
           box-sizing: border-box;
         }
@@ -510,7 +512,11 @@ const Login = () => {
               <button
                 type="button"
                 className="login-more-btn"
-                onClick={() => setShowMore(!showMore)}
+                onClick={() => {
+                  const next = !showMore;
+                  setShowMore(next);
+                  if (!next) setShowTestLogin(false);
+                }}
               >
                 <span>More options</span>
                 <span
