@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // Track user activity (clicks, keypresses, touches) to keep session alive
+  // Track user activity (any interaction keeps session alive)
   useEffect(() => {
     if (!user) return;
 
@@ -64,20 +64,15 @@ export const AuthProvider = ({ children }) => {
     window.addEventListener('click', handleActivity);
     window.addEventListener('keydown', handleActivity);
     window.addEventListener('touchstart', handleActivity);
-
-    // Periodically check if session expired (every 60s)
-    const expiryCheck = setInterval(() => {
-      if (isSessionExpired()) {
-        logout();
-        window.location.href = '/login';
-      }
-    }, 60 * 1000);
+    window.addEventListener('scroll', handleActivity, true);
+    window.addEventListener('mousemove', handleActivity);
 
     return () => {
       window.removeEventListener('click', handleActivity);
       window.removeEventListener('keydown', handleActivity);
       window.removeEventListener('touchstart', handleActivity);
-      clearInterval(expiryCheck);
+      window.removeEventListener('scroll', handleActivity, true);
+      window.removeEventListener('mousemove', handleActivity);
     };
   }, [user]);
 
