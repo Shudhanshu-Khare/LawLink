@@ -578,7 +578,7 @@ const Login = () => {
                       <div style={{ marginBottom: '10px' }}>
                         <input
                           type="email"
-                          placeholder="Email (e.g. rahul@example.com)"
+                          placeholder="Email (e.g. name@lawlink.com)"
                           required
                           className="login-test-input"
                           value={formData.email}
