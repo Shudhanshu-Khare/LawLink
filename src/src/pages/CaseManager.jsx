@@ -130,7 +130,7 @@ const CaseManager = () => {
         </motion.div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
+      <div className="ll-case-grid">
         {/* Case list */}
         <div>
           {loading ? <div className="ll-spinner"><div className="spinner-border" style={{ color: 'var(--accent)' }} /></div> :

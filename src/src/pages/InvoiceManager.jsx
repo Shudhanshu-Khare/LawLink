@@ -122,7 +122,7 @@ const InvoiceManager = () => {
       {invoices.length === 0 ? (
         <div className="ll-empty"><i className="bi bi-receipt" /><p>No invoices yet.</p></div>
       ) : (
-        <div className="ll-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        <div className="ll-grid-2">
           {invoices.map((inv, i) => (
             <motion.div key={inv._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
               <div className="ll-card">

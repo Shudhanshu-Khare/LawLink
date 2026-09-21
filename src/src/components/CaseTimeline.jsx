@@ -15,8 +15,9 @@ const CaseTimeline = ({ currentStatus, milestones = [] }) => {
 
   return (
     <div style={{ padding: '16px 0' }}>
-      {/* Progress bar */}
-      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: '28px' }}>
+      {/* Progress bar — scrollable on mobile */}
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginBottom: '28px', paddingBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', position: 'relative', minWidth: '480px' }}>
         {/* Background track */}
         <div style={{ position: 'absolute', width: '100%', height: '3px', background: 'var(--border)', top: '50%', transform: 'translateY(-50%)' }} />
         {/* Filled track */}
@@ -57,6 +58,7 @@ const CaseTimeline = ({ currentStatus, milestones = [] }) => {
               </motion.div>
             );
           })}
+        </div>
         </div>
       </div>
 

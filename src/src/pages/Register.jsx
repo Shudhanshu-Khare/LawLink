@@ -491,7 +491,16 @@ const Register = () => {
             align-items: center;
           }
           .register-text-block {
-            display: none;
+            text-align: center;
+            max-width: 100%;
+            padding: 0 8px;
+          }
+          .register-text-block h1 {
+            font-size: 1.5rem;
+          }
+          .register-text-block p {
+            font-size: 0.82rem;
+            line-height: 1.5;
           }
           .register-main-container {
             padding: 10px 16px 32px;

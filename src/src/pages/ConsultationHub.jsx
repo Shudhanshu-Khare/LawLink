@@ -58,7 +58,7 @@ const ConsultationHub = () => {
        consultations.length === 0 ? (
         <div className="ll-empty"><i className="bi bi-calendar-x" /><p>No consultations found.</p></div>
        ) : (
-        <div className="ll-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        <div className="ll-grid-2">
           {consultations.map((c, i) => (
             <motion.div key={c._id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04 }}>

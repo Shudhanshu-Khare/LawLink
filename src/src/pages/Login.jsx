@@ -477,7 +477,16 @@ const Login = () => {
             align-items: center;
           }
           .login-text-block {
-            display: none;
+            text-align: center;
+            max-width: 100%;
+            padding: 0 8px;
+          }
+          .login-text-block h1 {
+            font-size: 1.5rem;
+          }
+          .login-text-block p {
+            font-size: 0.82rem;
+            line-height: 1.5;
           }
           .login-main-container {
             padding: 10px 16px 32px;

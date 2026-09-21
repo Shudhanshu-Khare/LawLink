@@ -289,7 +289,24 @@ p { color: var(--text-secondary); }
   .ll-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 576px) {
-  .ll-grid { grid-template-columns: 1fr; }
+  .ll-grid, .ll-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+/* 2-column grid variant (Consultations, Documents, Invoices) */
+.ll-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Case detail grid (sidebar + detail panel) */
+.ll-case-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .ll-case-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Role Badge ── */
