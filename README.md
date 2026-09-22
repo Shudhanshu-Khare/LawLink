@@ -1,102 +1,123 @@
-# ⚖️ LawLink
+# LawLink
 
-**A full-stack legal workspace** where clients connect with lawyers — from booking consultations and tracking cases to real-time chat, document generation, invoicing, and court deadline reminders.
+A production-ready, full-stack legal workflow platform that connects clients with lawyers through real-time communication, case management, consultation scheduling, document generation, invoicing, and deadline tracking.
 
-Built from scratch with React, Node.js, MongoDB, and Socket.io. Deployed live on Render + Vercel.
+Built with React 18, Node.js, Express, MongoDB, and Socket.io. Deployed on Render and Vercel.
 
-🔗 **Live Demo**: [lawlink.vercel.app](https://lawlink.vercel.app)
-
----
-
-## Why I built this
-
-Most legal workflows still run on emails, spreadsheets, and WhatsApp groups. I wanted to build something that puts the entire client-lawyer relationship — consultations, cases, documents, payments, and communication — into one clean platform. No context switching, no lost files, no missed deadlines.
+**Live**: [lawlink.vercel.app](https://lawlink.vercel.app)
 
 ---
 
-## What it does
+## Features
 
-### For Clients
-- Browse a directory of verified lawyers (filterable by practice area, experience, and fee range)
-- Book consultation slots from a 14-day rolling calendar
-- Track case progress through a visual 6-stage timeline
-- Download legal documents and invoices as PDFs
-- Chat with their lawyer in real time
+### Client Features
+- Browse a searchable lawyer directory with filters for practice area, experience, and fee range
+- Book consultations from a 14-day rolling calendar with real-time slot availability
+- Track case progress through a visual 6-stage milestone timeline
+- Download legal documents and invoices as auto-generated PDFs
+- Real-time chat with assigned lawyers, including typing indicators and read receipts
 
-### For Lawyers
-- Manage cases with milestone tracking (Intake → Investigation → Filing → Hearing → Resolution → Closed)
-- Generate legal documents and invoices with auto-built PDFs
-- Set court deadlines that trigger email reminders 48 hours before due date
-- See which clients are online and respond instantly via chat
+### Lawyer Features
+- Manage client cases across six lifecycle stages: Intake, Investigation, Filing, Hearing, Resolution, Closed
+- Create legal documents and invoices with automatic PDF generation via pdfkit
+- Set court deadlines with automated email reminders 48 hours before the due date
+- View client online status and communicate instantly through real-time chat
 
-### For Admins
-- Verify, block, or remove user accounts
-- View platform-wide stats (total lawyers, clients, pending approvals)
-- Role-based tables with quick action buttons
+### Admin Features
+- Platform-wide dashboard with user statistics (verified, pending, blocked)
+- Verify, block, or delete user accounts with role-based action controls
+- Separate tables for lawyers, clients, and pending approval requests
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────┐          ┌──────────────────┐          ┌───────────────┐
-│   Frontend   │◄────────►│   Backend API    │◄────────►│  MongoDB Atlas│
-│  React 18    │  REST    │  Express + Node  │ Mongoose │  (Cloud DB)   │
-│  (Vercel)    │  + WS    │  (Render)        │          │               │
-└──────┬───────┘          └────────┬─────────┘          └───────────────┘
-       │                           │
-       │ Socket.io                 ├── Nodemailer (OTP, password reset, reminders)
-       │ (real-time chat,          ├── pdfkit (document & invoice PDFs)
-       │  typing indicators,       ├── node-cron (daily deadline check at 8 AM)
-       │  online presence)         └── Google OAuth 2.0 (sign-in/sign-up)
-       │                           
-       └──────────────────────────►│
+                           FRONTEND                              BACKEND                           DATABASE
+                    ┌─────────────────────┐             ┌─────────────────────┐            ┌──────────────────┐
+                    │     React 18        │   REST API  │   Express + Node    │  Mongoose  │  MongoDB Atlas   │
+                    │     Vite            │ ◄─────────► │   Socket.io Server  │ ◄────────► │  8 Collections   │
+                    │     Vercel          │             │   Render            │            │  Indexed Queries │
+                    └────────┬────────────┘             └──────────┬──────────┘            └──────────────────┘
+                             │                                     │
+                             │  WebSocket (Socket.io)              │  Services
+                             │  - Real-time messaging              │  - Nodemailer (OTP, reminders, password reset)
+                             │  - Typing indicators                │  - pdfkit (document and invoice PDFs)
+                             │  - Online presence                  │  - node-cron (daily deadline check at 08:00)
+                             │  - Read receipts                    │  - Google OAuth 2.0 (server-side verification)
+                             │                                     │
+                             └─────────────────────────────────────┘
+```
+
+### Request Flow
+
+```
+Client Browser
+     │
+     ▼
+Vercel CDN (static assets)
+     │
+     ▼ API requests (Axios + httpOnly cookies)
+     │
+Render Proxy (rate limiting at edge)
+     │
+     ▼
+Express Server
+     ├── Helmet (security headers)
+     ├── CORS (origin validation)
+     ├── express-mongo-sanitize (input cleaning)
+     ├── express-rate-limit (1000 req / 15 min)
+     ├── JWT Auth Middleware (cookie extraction + verification)
+     ├── Role Authorization (client / lawyer / admin)
+     └── Controller → Mongoose → MongoDB Atlas
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer | What I used |
+| Layer | Technologies |
 |---|---|
-| **Frontend** | React 18, Vite, React Router v6, Framer Motion, Bootstrap Icons, Axios |
-| **Backend** | Node.js, Express, Socket.io, Mongoose, JWT, bcryptjs, pdfkit, node-cron |
-| **Database** | MongoDB Atlas (8 models, indexed for performance) |
-| **Auth** | Google OAuth 2.0, JWT in httpOnly cookies, bcrypt password hashing |
-| **Security** | Helmet, express-rate-limit, express-mongo-sanitize, express-validator |
+| **Frontend** | React 18, Vite, React Router v6, Framer Motion, Bootstrap Icons, Axios, Socket.io Client |
+| **Backend** | Node.js, Express, Socket.io, Mongoose, jsonwebtoken, bcryptjs, pdfkit, node-cron, Nodemailer |
+| **Database** | MongoDB Atlas (User, Case, Consultation, Conversation, Message, LegalDocument, Invoice, Deadline) |
+| **Authentication** | Google OAuth 2.0 (server-side), JWT in httpOnly cookies, bcrypt password hashing |
+| **Security** | Helmet, express-rate-limit, express-mongo-sanitize, express-validator, cookie-parser |
+| **Testing** | Jest, Supertest |
 | **Deployment** | Vercel (frontend), Render (backend), MongoDB Atlas (database) |
 
 ---
 
-## Security
+## Security Implementation
 
-Not just "it has login." Here's what's actually implemented:
-
-| What | How |
+| Layer | Implementation |
 |---|---|
-| **Tokens** | JWT stored in httpOnly + secure + sameSite cookies — JavaScript can't touch them |
-| **Passwords** | bcrypt with salt rounds, never stored in plain text |
-| **API protection** | Every route behind JWT middleware, role-checked (client/lawyer/admin) |
-| **Input sanitization** | express-mongo-sanitize blocks NoSQL injection (`$gt`, `$ne` attacks) |
-| **Rate limiting** | 1000 requests per 15 minutes per IP in production |
-| **Headers** | Helmet sets 11+ security headers (HSTS, X-Frame-Options, CSP, etc.) |
-| **Socket auth** | WebSocket connections verified with JWT on handshake — no anonymous sockets |
-| **Session expiry** | Auto-logout after 20 minutes of inactivity (tracks clicks, scroll, keypress) |
-| **Google OAuth** | Server-side token verification via `google-auth-library` — no client-side trust |
+| **Token Storage** | JWT stored in httpOnly + secure + sameSite cookies; inaccessible to client-side JavaScript |
+| **Password Handling** | bcrypt with salt rounds; password field excluded from all API responses via `select: false` |
+| **Route Protection** | Every API route behind JWT verification middleware with role-based access control |
+| **Input Sanitization** | express-mongo-sanitize strips `$` and `.` operators to prevent NoSQL injection |
+| **Rate Limiting** | 1000 requests per 15-minute window per IP in production; Socket.io and health checks exempted |
+| **HTTP Headers** | Helmet applies 11+ security headers including HSTS, X-Frame-Options, Content-Security-Policy |
+| **WebSocket Auth** | Socket.io connections authenticated via JWT on handshake; unauthenticated connections rejected |
+| **Session Management** | Auto-logout after 20 minutes of inactivity; activity tracked via click, scroll, keypress, and mouse events |
+| **OAuth Verification** | Google tokens verified server-side using `google-auth-library`; no client-side token trust |
+| **Error Handling** | Global error middleware; uncaughtException and unhandledRejection handlers prevent server crashes |
 
 ---
 
-## Session & Server Management
+## Session and Server Management
 
-A few things I'm proud of in this project:
+### Keepalive Strategy
+The frontend sends a health check ping to the backend every 4 minutes, but only while a user is actively logged in. On logout, the keepalive stops. This ensures the server remains awake during active usage without wasting resources when the platform is idle.
 
-**Smart keepalive** — The frontend pings the backend health endpoint every 4 minutes, but *only while a user is logged in*. When everyone logs out, the pings stop and the server is free to sleep. No wasted resources.
+### Cold Start Handling
+The backend runs on Render's free tier, which spins down after 15 minutes of no inbound traffic. When a returning user triggers a cold start and the server takes longer than 4 seconds to respond, a full-screen "Starting server..." overlay is displayed. The user does not see a blank page or broken state.
 
-**Cold start handling** — Since this runs on Render's free tier, the server sleeps after 15 minutes of no traffic. When a user visits and the server is waking up, a "Starting server..." overlay appears after 4 seconds so they know what's happening instead of staring at a blank screen.
+### Auto-Retry on Network Failures
+API requests that fail due to timeouts, 502 errors, or network interruptions are automatically retried up to 3 times with exponential backoff (3s, 6s, 9s delays). This handles cold start latency transparently.
 
-**Activity-based sessions** — The app tracks user interactions (clicks, scrolling, typing, mouse movement, touch). If there's no activity for 20 minutes, the session expires and the user is redirected to login. This works both when the tab is open (checked every 5 minutes) and when the user closes and reopens the tab.
-
-**Auto-retry** — API requests that fail due to cold starts (timeouts, 502s, network errors) automatically retry up to 3 times with increasing delays (3s → 6s → 9s). The user doesn't have to manually refresh.
+### Activity-Based Session Expiry
+User interactions (clicks, scrolling, typing, mouse movement, touch events) update an activity timestamp in localStorage. A background check runs every 5 minutes: if no activity has been recorded for 20 minutes, the session is terminated and the user is redirected to the login page. This also applies on tab close and reopen.
 
 ---
 
@@ -105,85 +126,168 @@ A few things I'm proud of in this project:
 ```
 LawLink/
 ├── backend/
-│   ├── controllers/          # Route handlers (auth, chat, case, etc.)
-│   ├── models/               # Mongoose schemas (User, Case, Message, etc.)
-│   ├── routes/               # Express route definitions
-│   ├── middleware/            # JWT auth middleware
-│   ├── validators/           # Input validation rules
-│   ├── services/             # Reminder cron job
-│   ├── socket/               # Socket.io event handlers
+│   ├── controllers/          # 9 route handlers (auth, admin, case, chat, consultation,
+│   │                         #   deadline, document, invoice, user)
+│   ├── models/               # 8 Mongoose schemas with indexes
+│   │   ├── User.model.js
+│   │   ├── Case.model.js
+│   │   ├── Consultation.model.js
+│   │   ├── Conversation.model.js
+│   │   ├── Message.model.js
+│   │   ├── LegalDocument.model.js
+│   │   ├── Invoice.model.js
+│   │   └── Deadline.model.js
+│   ├── routes/               # Express route definitions with middleware
+│   ├── middleware/            # JWT authentication and file upload
+│   ├── validators/           # express-validator rule sets
+│   ├── services/             # Deadline reminder cron service
+│   ├── socket/               # Socket.io connection and event handlers
 │   ├── tests/                # Jest + Supertest API tests
 │   ├── seed.js               # Test data seeder
-│   └── server.js             # App entry point
+│   ├── migrate-verify.js     # Database migration utility
+│   ├── cleanup-test-accounts.js  # Test account cleanup script
+│   └── server.js             # Application entry point
 │
 ├── src/
 │   └── src/
 │       ├── pages/            # 12 application screens
-│       │   ├── Login.jsx
-│       │   ├── Register.jsx
-│       │   ├── Chat.jsx
-│       │   ├── CaseManager.jsx
-│       │   ├── ConsultationHub.jsx
-│       │   ├── BookConsultation.jsx
-│       │   ├── DocumentHub.jsx
-│       │   ├── InvoiceManager.jsx
-│       │   ├── DeadlineCalendar.jsx
-│       │   ├── LawyerDirectory.jsx
-│       │   ├── Profile.jsx
-│       │   └── AdminDashboard.jsx
-│       ├── components/       # Sidebar, CaseTimeline
-│       ├── contexts/         # AuthContext, SocketContext
-│       ├── hooks/            # useSocket
-│       ├── services/         # API layer with retry + keepalive
-│       └── styles/           # Design system (lawlink.css)
+│       │   ├── Login.jsx             # Dual auth (Google OAuth + email/password)
+│       │   ├── Register.jsx          # Role-based registration (client/lawyer)
+│       │   ├── Chat.jsx              # Real-time messaging with Socket.io
+│       │   ├── CaseManager.jsx       # Case CRUD + milestone timeline
+│       │   ├── ConsultationHub.jsx   # Consultation list and status management
+│       │   ├── BookConsultation.jsx  # Calendar-based slot booking
+│       │   ├── DocumentHub.jsx       # Legal document management + PDF download
+│       │   ├── InvoiceManager.jsx    # Invoice creation + PDF generation
+│       │   ├── DeadlineCalendar.jsx  # Court deadline tracking
+│       │   ├── LawyerDirectory.jsx   # Searchable lawyer listings
+│       │   ├── Profile.jsx           # User profile management
+│       │   └── AdminDashboard.jsx    # Admin controls and statistics
+│       ├── components/       # Sidebar navigation, CaseTimeline visualization
+│       ├── contexts/         # AuthContext (session management), SocketContext (real-time)
+│       ├── hooks/            # useSocket custom hook
+│       ├── services/         # Axios API layer with retry logic and keepalive
+│       └── styles/           # Design system (lawlink.css with CSS custom properties)
 │
 └── README.md
 ```
 
 ---
 
-## API Overview
+## API Reference
 
-| Module | Key Endpoints | Auth |
-|---|---|---|
-| **Auth** | `/register`, `/login`, `/google`, `/me`, `/logout`, `/forgot-password`, `/reset-password/:token` | Public / JWT |
-| **Admin** | `/stats`, `/lawyers`, `/clients`, `/verify/:id`, `/block/:id`, `DELETE /:id` | Admin only |
-| **Users** | `GET /lawyers`, `GET /:id` | Public |
-| **Consultations** | `POST /`, `GET /`, `PUT /:id/status`, `GET /availability/:lawyerId` | JWT + Role |
-| **Cases** | `POST /`, `GET /`, `PUT /:id/status`, `POST /:id/milestone` | JWT + Role |
-| **Chat** | `GET /conversations`, `GET /messages/:id`, `GET /unread-count` | JWT |
-| **Documents** | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/revoke` | JWT + Role |
-| **Invoices** | `POST /`, `GET /`, `GET /:id/pdf`, `PUT /:id/pay` | JWT + Role |
-| **Deadlines** | `POST /`, `GET /`, `DELETE /:id` | JWT + Role |
+All endpoints are prefixed with `/api/`.
 
-All endpoints prefixed with `/api/`. Role-based access means certain actions are restricted — e.g., only lawyers can create documents, only clients can mark invoices as paid.
+### Authentication
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Register with email and password | Public |
+| POST | `/auth/login` | Login with email and password | Public |
+| POST | `/auth/google` | Google OAuth sign-in | Public |
+| POST | `/auth/google-register` | Google OAuth sign-up with role selection | Public |
+| GET | `/auth/me` | Get current user profile | JWT |
+| PUT | `/auth/profile` | Update profile details | JWT |
+| POST | `/auth/logout` | Clear auth cookie | JWT |
+| POST | `/auth/forgot-password` | Send password reset email | Public |
+| PUT | `/auth/reset-password/:token` | Reset password with token | Public |
+
+### Admin
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/admin/stats` | Platform-wide statistics | Admin |
+| GET | `/admin/lawyers` | All registered lawyers | Admin |
+| GET | `/admin/clients` | All registered clients | Admin |
+| POST | `/admin/verify/:id` | Verify a pending user | Admin |
+| POST | `/admin/block/:id` | Block/unblock a user | Admin |
+| DELETE | `/admin/:id` | Delete a user account | Admin |
+
+### Cases
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/cases/` | Create a new case | Lawyer |
+| GET | `/cases/` | Get user's cases | JWT |
+| PUT | `/cases/:id/status` | Update case stage | Lawyer |
+| POST | `/cases/:id/milestone` | Add milestone entry | Lawyer |
+
+### Consultations
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/consultations/` | Book a consultation | Client |
+| GET | `/consultations/` | Get user's consultations | JWT |
+| PUT | `/consultations/:id/status` | Accept/reject/complete | Lawyer |
+| GET | `/consultations/availability/:lawyerId` | Check lawyer availability | JWT |
+
+### Chat
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/chat/conversations` | Get user's conversations | JWT |
+| GET | `/chat/messages/:id` | Get messages in conversation | JWT |
+| GET | `/chat/unread-count` | Total unread messages | JWT |
+
+### Documents, Invoices, Deadlines
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/documents/` | Create legal document | Lawyer |
+| GET | `/documents/` | Get user's documents | JWT |
+| GET | `/documents/:id/pdf` | Download document PDF | JWT |
+| POST | `/invoices/` | Create invoice with line items | Lawyer |
+| GET | `/invoices/:id/pdf` | Download invoice PDF | JWT |
+| PUT | `/invoices/:id/pay` | Mark invoice as paid | Client |
+| POST | `/deadlines/` | Create court deadline | Lawyer |
+| GET | `/deadlines/` | Get user's deadlines | JWT |
+| DELETE | `/deadlines/:id` | Remove a deadline | Lawyer |
+
+---
+
+## Responsive Design
+
+The platform is fully responsive across desktop and mobile devices:
+
+- Login and Register pages adapt to phone screens with scrollable card-based forms
+- Chat switches from a two-column layout (conversation list + chat area) to single-column with a back button on mobile
+- Dashboard, Documents, Invoices, and Consultations cards stack vertically on small screens
+- Case Timeline is horizontally scrollable on phones
+- Admin tables are wrapped in scroll containers for overflow handling
+- All interactive elements maintain a minimum 44px touch target
+
+All mobile styles are contained within `@media` queries. Desktop layout is not affected.
 
 ---
 
 ## Getting Started
 
+### Prerequisites
+- Node.js 18+
+- MongoDB Atlas account
+- Google Cloud Console project (for OAuth)
+- Gmail account with App Password (for email services)
+
+### Installation
+
 ```bash
-# Clone
+# Clone the repository
 git clone https://github.com/Shudhanshu-Khare/LawLink.git
 cd LawLink
 
-# Install everything
+# Install all dependencies
 npm run install-all
 
-# Set up environment variables
+# Configure environment
 cp .env.example backend/config/config.env
-# Fill in: MONGO_URI, JWT_SECRET, EMAIL_USER, EMAIL_PASS, GOOGLE_CLIENT_ID
+# Edit config.env with your credentials (see Environment Variables below)
 
 # Seed test data (optional)
-cd backend && npm run seed
+cd backend && npm run seed && cd ..
 
-# Run both servers
-cd .. && npm run dev
+# Start development servers
+npm run dev
 ```
 
-Frontend: `http://localhost:5173` · Backend: `http://localhost:5000`
+Frontend: `http://localhost:5173` | Backend: `http://localhost:5000`
 
-### Test Accounts (after seeding)
+### Test Accounts
+
+After running the seed script:
 
 | Role | Email | Password |
 |---|---|---|
@@ -194,31 +298,18 @@ Frontend: `http://localhost:5173` · Backend: `http://localhost:5000`
 
 ## Environment Variables
 
-| Variable | What it's for |
+Create `backend/config/config.env` using `.env.example` as a template:
+
+| Variable | Description |
 |---|---|
 | `MONGO_URI` | MongoDB Atlas connection string |
-| `JWT_SECRET` | Secret for signing JWT tokens (use something long and random) |
-| `JWT_EXPIRE` | Token lifetime (e.g., `30d`) |
-| `EMAIL_USER` | Gmail address for sending OTPs and deadline reminders |
-| `EMAIL_PASS` | Gmail App Password (16-character, not your regular password) |
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console for OAuth |
-| `GOOGLE_CLIENT_SECRET` | OAuth client secret |
-| `CLIENT_URL` | Frontend URL for CORS (`http://localhost:5173` locally) |
-
----
-
-## Responsive Design
-
-The entire platform works on both desktop and mobile:
-
-- **Login/Register** — card-based layout that adapts to phone screens with scrollable forms
-- **Chat** — switches from 2-column (list + conversation) to single-column with a back button on mobile
-- **Dashboard, Documents, Invoices, Consultations** — cards stack vertically on small screens
-- **Case Timeline** — horizontally scrollable on phones
-- **Admin tables** — wrapped in scroll containers
-- **Touch targets** — all buttons and inputs are at least 44px for comfortable tapping
-
-Desktop layout is completely untouched by mobile styles — everything is inside `@media` queries.
+| `JWT_SECRET` | Secret key for JWT signing (use a long random string) |
+| `JWT_EXPIRE` | Token expiry duration (e.g., `30d`) |
+| `EMAIL_USER` | Gmail address for OTPs and deadline reminders |
+| `EMAIL_PASS` | Gmail App Password (16-character) |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret |
+| `CLIENT_URL` | Frontend URL for CORS (default: `http://localhost:5173`) |
 
 ---
 
@@ -228,21 +319,21 @@ Desktop layout is completely untouched by mobile styles — everything is inside
 cd backend && npm test
 ```
 
-8 API tests covering registration, login, token validation, duplicate handling, and NoSQL injection prevention.
+8 API tests covering user registration, authentication, token validation, duplicate account prevention, and NoSQL injection resistance.
 
 ---
 
-## What I'd add next
+## Future Scope
 
-If I were to keep building:
 - End-to-end encryption for chat messages
-- Video consultations (WebRTC)
-- Payment gateway integration (Razorpay/Stripe)
-- Push notifications for mobile
+- Video consultations via WebRTC
+- Payment gateway integration (Razorpay / Stripe)
+- Push notifications
 - Multi-language support
+- Role-based analytics dashboard
 
 ---
 
 ## License
 
-MIT — use it however you want.
+MIT
