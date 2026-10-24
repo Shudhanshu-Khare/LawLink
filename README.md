@@ -4,7 +4,7 @@ A production-ready, full-stack legal workflow platform that connects clients wit
 
 Built with React 18, Node.js, Express, MongoDB, and Socket.io. Deployed on Render and Vercel.
 
-**Live**: [lawlink.vercel.app](https://lawlink.vercel.app)
+**Live**: [lawlink.vercel.app](lawlink-app.vercel.app)
 
 ---
 
